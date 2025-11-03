@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 export default function HeroSection() {
   return (
@@ -52,12 +53,14 @@ export default function HeroSection() {
             </div>
 
             {/* Submit Button */}
-            <button
-              type="submit"
-              className="text-lg mb-2 w-full py-3 px-4 bg-[#FFF000] font-bold text-black rounded-full hover:bg-yellow-500 focus:outline-none transition"
-            >
-              Login
-            </button>
+            <Link href="/home"> {/* Link ke halaman utama setelah login */}
+              <button
+                type="submit"
+                className="text-lg mb-2 w-full py-3 px-4 bg-[#FFF000] font-bold text-black rounded-full hover:bg-yellow-500 focus:outline-none transition"
+              >
+                Login
+              </button>
+            </Link>
           </form>
 
           {/* "Atau" dengan garis di bawah */}
@@ -69,21 +72,23 @@ export default function HeroSection() {
 
           {/* Login as Admin Button */}
           <div className="text-center mt-4">
-            <button
-              type="button"
-              className="text-lg w-full py-3 px-4 bg-transparent font-bold text-black border-2 border-black rounded-full hover:bg-[#064479] hover:text-white transition"
-            >
-              Login sebagai Admin
-            </button>
+            <Link href="/admin"> {/* Link ke halaman admin */}
+              <button
+                type="button"
+                className="text-lg w-full py-3 px-4 bg-transparent font-bold text-black border-2 border-black rounded-full hover:bg-[#064479] hover:text-white transition"
+              >
+                Login sebagai Admin
+              </button>
+            </Link>
           </div>
 
           {/* Register Link */}
           <div className="text-center mt-4">
             <p className="text-base">
               Belum punya akun?{" "}
-              <a href="/register" className="text-[#064479] hover:text-[#FFF000]">
+              <Link href="/register" className="text-[#064479] hover:text-[#FFF000]">
                 Daftar sekarang!
-              </a>
+              </Link>
             </p>
           </div>
         </div>

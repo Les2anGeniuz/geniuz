@@ -1,5 +1,5 @@
-import Navbar from "./components/navbar";
-import HeroSection from "./components/heroSection";
+import Navbar from "../components/layouts/navbar";
+import HeroSection from "../components/landings/heroSection";
 
 export default function Login() {
     return (

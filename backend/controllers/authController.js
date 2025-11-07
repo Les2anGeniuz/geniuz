@@ -14,7 +14,7 @@ function signToken(payload) {
 // POST /api/auth/register
 export async function register(req, res) {
   try {
-    const { nama_lengkap, email, password, id_Fakultas } = req.body;
+    const { nama_lengkap, email, password } = req.body;
 
     if (!email || !password) return res.status(400).json({ error: 'Email & password wajib' });
     if (password.length < 6) return res.status(400).json({ error: 'Password minimal 6 karakter' });
@@ -30,7 +30,7 @@ export async function register(req, res) {
     const { data, error } = await supabaseAdmin
       .from(TABLE)
       .insert([{
-        nama_lengkap, email, password: hashed, id_Fakultas
+        nama_lengkap, email, password: hashed, 
         // created_at auto now() dari DB
       }])
       .select('id_User, email, nama_lengkap, created_at')
@@ -60,6 +60,7 @@ export async function login(req, res) {
 
     if (error) {
       console.error('[LOGIN SELECT ERROR]', error);
+      // Mengembalikan error yang sama untuk keamanan
       return res.status(401).json({ error: 'Email atau password salah' });
     }
     if (!user) {
@@ -67,9 +68,16 @@ export async function login(req, res) {
       return res.status(401).json({ error: 'Email atau password salah' });
     }
 
+    // PENTING: Cek apakah password hash berhasil diambil dari DB
+    if (!user.password) {
+        console.error('[LOGIN ERROR] Password hash not retrieved from database. Check RLS policy.');
+        return res.status(401).json({ error: 'Email atau password salah' });
+    }
+
     console.log('[LOGIN USER ROW]', { id_User: user.id_User, email: user.email, hasPwd: !!user.password });
 
-    const ok = await bcrypt.compare(password, user.password || '');
+    // Perbandingan bcrypt
+    const ok = await bcrypt.compare(password, user.password);
     if (!ok) {
       console.error('[LOGIN BCRYPT MISMATCH]');
       return res.status(401).json({ error: 'Email atau password salah' });

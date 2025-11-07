@@ -11,7 +11,7 @@ export default function LoginPage() {
       <div className="bg-white/95 items-center justify-center backdrop-blur-md p-10 rounded-3xl shadow-xl w-full max-w-[520px] text-center">
 
         {/* Title */}
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Masuk</h1>
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Dashboard</h1>
         <p className="text-gray-500 mb-8">Masukkan email dan password</p>
 
         {/* Form */}

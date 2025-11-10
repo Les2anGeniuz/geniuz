@@ -15,14 +15,14 @@ const Sidebar = () => {
   const pathname = usePathname();
 
   const menuOverview = [
-    { name: "Dashboard", icon: Home2Linear, href: "/dashboard" },
-    { name: "Analytics", icon: ChartSquareLinear, href: "/analytics" },
+    { name: "Dashboard", icon: Home2Linear, href: "/admin/dashboard" },
+    { name: "Analytics", icon: ChartSquareLinear, href: "/admin/analytics" },
   ];
 
   const menuManagement = [
-    { name: "Kelas", icon: BookLinear, href: "/kelas" },
-    { name: "Materi", icon: DocumentTextLinear, href: "/materi" },
-    { name: "Siswa", icon: UserLinear, href: "/siswa" },
+    { name: "Kelas", icon: BookLinear, href: "/admin/kelas" },
+    { name: "Materi", icon: DocumentTextLinear, href: "/admin/materi" },
+    { name: "Siswa", icon: UserLinear, href: "/admin/siswa" },
   ];
 
   const isActive = (path: string) =>
@@ -37,8 +37,8 @@ const Sidebar = () => {
         <Image
             src="/logo_geniuz.png"
             alt="Logo Les-lesan Geniuz"
-            width={120}
-            height={40}
+            width={100}
+            height={20}
             priority
         />
       </div>

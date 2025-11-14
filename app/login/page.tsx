@@ -1,29 +1,42 @@
 "use client";
+
+import React from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // mencegah reload halaman
+    router.push("/dashboard"); // redirect setelah login
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-[url('/background.png')]">
-        {/* Logo */}
-        <div className="top-9 fixed justify-center">
-          <Image src="/logo_putih.svg" alt="Les2an Geniuz" width={140} height={50} />
-        </div>
-      <div className="bg-white/95 items-center justify-center backdrop-blur-md p-10 rounded-3xl shadow-xl w-full max-w-[520px] text-center">
+      {/* Logo */}
+      <div className="top-9 fixed justify-center">
+        <Image src="/logo_putih.svg" alt="Les2an Geniuz" width={140} height={50} />
+      </div>
 
+      <div className="bg-white/95 items-center justify-center backdrop-blur-md p-10 rounded-3xl shadow-xl w-full max-w-[520px] text-center">
         {/* Title */}
         <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Masuk</h1>
         <p className="text-gray-500 mb-8">Masukkan email dan password</p>
 
         {/* Form */}
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleLogin}>
           <input
             type="email"
             placeholder="Email"
+            required
             className="w-full bg-gray-100 text-gray-700 rounded-full px-4 py-3 border border-gray-500 focus:ring-2 focus:ring-[#FFF000] focus:outline-none"
           />
+
           <input
             type="password"
             placeholder="Password"
+            required
             className="w-full bg-gray-100 text-gray-700 rounded-full px-4 py-3 border border-gray-500 focus:ring-2 focus:ring-[#FFF000] focus:outline-none"
           />
 

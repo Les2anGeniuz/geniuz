@@ -12,7 +12,6 @@ import {
   UserLinear,
   Logout3Linear,
 } from "solar-icon-set";
-import { supabase } from "../../../lib/supabaseClient";
 
 interface UserData {
   name: string;
@@ -25,14 +24,16 @@ const SidebarAdmin = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data, error } = await supabase
-        .from("User")
-        .select("nama_lengkap, email")
-        .limit(1)
-        .single();
+      const res = await fetch("/api/admin/me", { cache: "no-store" });
+      const result = await res.json();
 
-      if (!error && data) {
-        setUser({ name: data.nama_lengkap, email: data.email });
+      if (res.ok) {
+        setUser({
+          name: result.nama,
+          email: result.email,
+        });
+      } else {
+        console.error("Gagal ambil data admin:", result.error);
       }
     };
 
@@ -78,7 +79,6 @@ const SidebarAdmin = () => {
 
       {/* Menu */}
       <nav className="flex-1 px-4 py-4 space-y-6 overflow-y-auto">
-        {/* Overview */}
         <div>
           <p className="text-xs font-semibold text-gray-500 mb-2 uppercase">
             Overview
@@ -103,7 +103,6 @@ const SidebarAdmin = () => {
           </ul>
         </div>
 
-        {/* Management */}
         <div>
           <p className="text-xs font-semibold text-gray-500 mb-2 uppercase">
             Management

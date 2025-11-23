@@ -8,8 +8,6 @@ const SELECT_RELS = `
   id_Mentor,
   nama_kelas,
   deskripsi,
-  created_at,
-  updated_at,
   Fakultas(id_Fakultas,nama_fakultas),
   Mentor(id_Mentor,nama_mentor),
   Pendaftaran(id_Pendaftaran)
@@ -30,9 +28,6 @@ function normalize(row: any) {
     jumlah_siswa: Array.isArray(row.Pendaftaran)
       ? row.Pendaftaran.length
       : 0,
-
-    created_at: row.created_at,
-    updated_at: row.updated_at,
   };
 }
 
@@ -41,29 +36,30 @@ function getId(req: Request) {
   return url.pathname.split("/").pop();
 }
 
-export async function GET(req: Request) {
-  const adminId = (await cookies()).get("admin_id")?.value;
-  if (!adminId)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  const { id } = params;
 
-  try {
-    const id = getId(req);
-    const supabase = supabaseServer();
+  const supabase = supabaseServer();
 
-    const { data, error } = await supabase
-      .from("Kelas")
-      .select(SELECT_RELS)
-      .eq("id_Kelas", id)
-      .single();
+  const { data, error } = await supabase
+    .from("Kelas")
+    .select("*")
+    .eq("id_Kelas", id)
+    .maybeSingle();
 
-    if (error)
-      return NextResponse.json({ error: error.message }, { status: 500 });
-
-    return NextResponse.json({ data: normalize(data) });
-  } catch (err: any) {
-    console.error("GET /api/kelas/[id]:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  // jika data tidak ditemukan
+  if (!data) {
+    return NextResponse.json(
+      { error: `Kelas dengan ID ${id} tidak ditemukan` },
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json(data);
 }
 
 export async function PUT(req: Request) {

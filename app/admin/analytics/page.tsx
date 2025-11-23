@@ -18,7 +18,7 @@ export default function AdminAnalytics() {
         {/* Isi halaman */}
         <main className="flex-1 px-8 pt-4 pb-6 space-y-6">
           {/* Judul Halaman */}
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">Analytics</h1>
+          <h1 className="text-3xl font-bold text-[#002D5B] mb-4">Analytics</h1>
           <section>
             <AnalyticsStats />
           </section>

@@ -1,5 +1,3 @@
-// ==== FINAL FIXED VERSION (tidak collapse, sticky benar) ====
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -150,7 +148,7 @@ export default function KelasPage() {
           <div className="sticky top-16 bg-[#F3F6FA] pt-6 pb-4 z-20">
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-2xl font-semibold text-[#002D5B]">Manajemen Kelas</h1>
+                <h1 className="text-3xl font-bold text-[#002D5B]">Manajemen Kelas</h1>
                 <p className="text-sm text-gray-500">Buat, edit, dan atur daftar kelas</p>
               </div>
 

@@ -26,8 +26,8 @@ export default function KelasTable({ data, onEdit, onDelete }: Props) {
           gap-x-6
           px-6 py-3
           rounded-xl mb-2
-          text-[13px] font-bold text-[#002D5B]
-          bg-[#F4F7FC]
+          text-[13px] font-bold text-white
+          bg-[#002D5B]
           sticky top-0 z-10
         "
       >

@@ -63,6 +63,9 @@ const Sidebar: React.FC = () => {
           </span>
         </div>
 
+        {/* Menu Utama */}
+        <div className="ml-4 mb-3 font-semibold text-[#064479] text-sm">Menu Utama</div>
+
         {/* Navigation */}
         <ul className="flex flex-col gap-3 font-medium text-[#0a4378]">
           <li className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-4 transition">

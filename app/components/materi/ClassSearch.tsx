@@ -23,44 +23,34 @@ export default function ClassSearch({
   });
 
   return (
-    <div className="mb-6">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Cari Kelas
-      </label>
-      <div className="flex items-center gap-3">
+    <div className="mb-5">
+
+      <div className="flex items-center gap-4 mb-3">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Cari berdasarkan nama atau id kelas"
-          className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#002D5B]"
+          placeholder="Cari nama atau ID kelas..."
+          className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#002D5B]/20 focus:border-[#002D5B]"
         />
-        <button
-          onClick={() => {
-            if (filtered[0]) onSelect(filtered[0]);
-          }}
-          className="bg-[#002D5B] text-white px-4 py-2 rounded-lg"
-        >
-          Pilih
-        </button>
       </div>
 
       {q && (
-        <ul className="mt-2 max-h-44 overflow-auto border border-gray-100 rounded-md">
+        <ul className="mt-3 max-h-48 overflow-auto border border-gray-200/70 rounded-xl bg-white shadow-sm">
           {filtered.map((c) => (
             <li
               key={c.id}
-              className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+              className="px-4 py-3 hover:bg-gray-50 cursor-pointer"
               onClick={() => {
                 onSelect(c);
                 setQ("");
               }}
             >
-              <div className="text-sm font-medium">{c.name}</div>
+              <div className="text-sm font-medium text-gray-800">{c.name}</div>
               <div className="text-xs text-gray-500">ID: {c.id}</div>
             </li>
           ))}
           {filtered.length === 0 && (
-            <li className="px-4 py-2 text-sm text-gray-500">Tidak ada hasil</li>
+            <li className="px-4 py-3 text-sm text-gray-500">Tidak ada hasil</li>
           )}
         </ul>
       )}

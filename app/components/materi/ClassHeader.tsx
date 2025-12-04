@@ -7,24 +7,28 @@ export default function ClassHeader({
 }) {
   if (!kelas)
     return (
-      <div className="bg-[#002D5B] border-gray-200 rounded-2xl shadow-sm p-5">
-        <p className="text-sm text-white">Belum ada kelas yang dipilih</p>
+      <div className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm bg-[#002D5B] text-white">
+        <p className="text-sm opacity-90">Belum ada kelas yang dipilih</p>
       </div>
     );
 
   return (
-    <div className="bg-[#002D5B] border-gray-200 rounded-2xl shadow-sm p-5">
+    <div className="bg-[#002D5B] rounded-2xl shadow-md p-6 text-white sticky top-16 z-30">
       <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-white">{kelas.name}</h2>
-          <p className="text-sm text-white mt-1">ID: {kelas.id}</p>
+        <div className="space-y-2">
+          <h2 className="text-3xl font-semibold">{kelas.name}</h2>
+          <p className="text-sm opacity-80">ID: {kelas.id}</p>
+
           {kelas.description && (
-            <p className="text-sm text-white mt-3">{kelas.description}</p>
+            <p className="text-sm opacity-90 leading-relaxed max-w-xl">
+              {kelas.description}
+            </p>
           )}
         </div>
-        <div className="text-right text-sm text-white">
-          <div>3 modul</div>
-          <div className="mt-2">8j durasi total</div>
+
+        <div className="text-right text-sm opacity-90 space-y-1">
+          <p>3 modul</p>
+          <p>8j durasi total</p>
         </div>
       </div>
     </div>

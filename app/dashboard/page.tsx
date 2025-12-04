@@ -3,7 +3,7 @@
 import Sidebar from "../components/sidebar";
 import Topbar from "../components/topbar";
 import Overview from "../components/overview";  // Komponen Overview yang sudah dibuat
-import SearchBar from "../components/searchbar"; // Komponen SearchBar yang sudah dibuat
+import SearchBar from "../components/searchbar";
 
 export default function DashboardPage() {
   return (

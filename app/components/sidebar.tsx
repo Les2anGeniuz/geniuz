@@ -52,6 +52,7 @@ const Sidebar: React.FC = () => {
   return (
     <div className="fixed top-16 left-0 h-full w-64 bg-white shadow-lg z-40">
       <div className="flex flex-col p-4 space-y-6">
+
         {/* User Info */}
         <div className="mb-4 flex flex-col items-start ml-4">
           <div className="font-bold text-lg text-[#0a4378]">
@@ -62,27 +63,24 @@ const Sidebar: React.FC = () => {
           </span>
         </div>
 
+        {/* Menu Utama */}
+        <div className="ml-4 mb-3 font-semibold text-[#064479] text-sm">Menu Utama</div>
+
         {/* Navigation */}
         <ul className="flex flex-col gap-3 font-medium text-[#0a4378]">
           <li className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-4 transition">
             <Image src="/beranda.svg" alt="Home Icon" width={18} height={18} />
-            <Link href="/" className="text-sm">
-              Beranda
-            </Link>
+            <Link href="/" className="text-sm">Beranda</Link>
           </li>
 
           <li className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-4 transition">
             <Image src="/setting.svg" alt="Settings Icon" width={18} height={18} />
-            <Link href="/settings" className="text-sm">
-              Pengaturan
-            </Link>
+            <Link href="/settings" className="text-sm">Pengaturan</Link>
           </li>
 
           <li className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-4 transition">
             <Image src="/callService.svg" alt="Call Service Icon" width={18} height={18} />
-            <Link href="/call-service" className="text-sm">
-              Call Service
-            </Link>
+            <Link href="/call-service" className="text-sm">Call Service</Link>
           </li>
 
           {/* Kelas */}
@@ -107,9 +105,7 @@ const Sidebar: React.FC = () => {
         {/* Logout */}
         <div className="mt-auto flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-4 transition">
           <Image src="/logout.svg" alt="Logout Icon" width={18} height={18} />
-          <Link href="/logout" className="text-sm">
-            Logout
-          </Link>
+          <Link href="/logout" className="text-sm">Logout</Link>
         </div>
       </div>
     </div>

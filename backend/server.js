@@ -1,18 +1,23 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import authRoutes from './routes/auth.js';
-dotenv.config();
+import express from 'express'
+import cors from 'cors'
+import dotenv from 'dotenv'
+import authRoutes from './routes/auth.js'
+import pendaftaranRoutes from './routes/pendaftaran.js'
+import pembayaranRoutes from './routes/pembayaran.js'
 
-const app = express();
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') || true, credentials: true }));
-app.use(express.json()); // <— WAJIB, agar body JSON bisa dibaca
+dotenv.config()
 
-app.get('/', (_, res) => res.send('API OK'));                 // optional
-app.get('/api/auth/health', (_, res) => res.json({ ok: true })); // optional healthcheck
+const app = express()
+app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') || true, credentials: true }))
+app.use(express.json())
 
-app.use('/api/auth', authRoutes);
+app.get('/', (_, res) => res.send('API OK'))
+app.get('/api/auth/health', (_, res) => res.json({ ok: true }))
+
+app.use('/api/auth', authRoutes)
+app.use('/api/pendaftaran', pendaftaranRoutes)
+app.use('/api/pembayaran', pembayaranRoutes)
 
 app.listen(process.env.PORT || 5000, () => {
-  console.log(`Backend ready on http://localhost:${process.env.PORT || 5000}`);
-});
+  console.log(`Backend ready on http://localhost:${process.env.PORT || 5000}`)
+})

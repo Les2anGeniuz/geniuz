@@ -3,7 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
+<<<<<<< HEAD
+import { supabase } from "../lib/supabaseClient";
+=======
 import { supabase } from "../../lib/supabaseClient";
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
 
 interface UserData {
   name: string;
@@ -18,6 +22,14 @@ const Sidebar: React.FC = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
+<<<<<<< HEAD
+      const userId = "YOUR_USER_ID"; // Replace with valid user ID
+      const { data, error } = await supabase
+        .from("users")
+        .select("nama_lengkap, fakultas:nama_fakultas") 
+        .eq("id_User", userId) 
+        .single(); 
+=======
       const {
         data: { user },
         error: userError,
@@ -35,13 +47,18 @@ const Sidebar: React.FC = () => {
         .select("nama_lengkap, nama_fakultas")
         .eq("id_User", userId)
         .single();
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
 
       if (error) {
         console.error("Error fetching user data:", error);
       } else {
         setUserData({
           name: data.nama_lengkap,
+<<<<<<< HEAD
+          fakultas: data.fakultas,
+=======
           fakultas: data.nama_fakultas,
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
         });
       }
     };
@@ -50,6 +67,22 @@ const Sidebar: React.FC = () => {
   }, []);
 
   return (
+<<<<<<< HEAD
+    <div className="fixed top-16 left-0 h-full w-64 bg-white shadow-lg z-40"> {/* Sidebar starts below navbar */}
+      <div className="flex flex-col p-4 space-y-6">
+        {/* User Info */}
+        <div className="mb-4 flex flex-col items-start ml-4">
+          <div className="font-bold text-lg text-[#0a4378]">{userData.name}</div>
+          <span className="text-sm text-gray-500">{userData.fakultas}</span>
+        </div>
+
+        {/* Navigation Menu */}
+        <ul className="flex flex-col gap-3 font-medium text-[#0a4378]">
+          <li className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-4 transition">
+            <Image src="/home.svg" alt="Home Icon" width={18} height={18} />
+            <Link href="/" className="text-sm">Beranda</Link>
+          </li>
+=======
     <div className="fixed top-16 left-0 h-full w-64 bg-white shadow-lg z-40">
       <div className="flex flex-col p-4 space-y-6">
 
@@ -73,21 +106,34 @@ const Sidebar: React.FC = () => {
             <Link href="/" className="text-sm">Beranda</Link>
           </li>
 
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
           <li className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-4 transition">
             <Image src="/setting.svg" alt="Settings Icon" width={18} height={18} />
             <Link href="/settings" className="text-sm">Pengaturan</Link>
           </li>
+<<<<<<< HEAD
+=======
 
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
           <li className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-4 transition">
             <Image src="/callService.svg" alt="Call Service Icon" width={18} height={18} />
             <Link href="/call-service" className="text-sm">Call Service</Link>
           </li>
 
+<<<<<<< HEAD
+          {/* My Kelas Gua Section */}
+=======
           {/* Kelas */}
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
           <li className="ml-4">
             <div className="font-semibold text-[#064479] text-sm">Kelas Saya</div>
             <ul className="flex flex-col gap-2 mt-2">
               {["DABD", "TCBA", "KBR", "ADT", "ROSBD", "ML", "BI"].map((item, idx) => (
+<<<<<<< HEAD
+                <li key={idx} className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-0 transition">
+                  <Image src="/courseIcons.svg" alt="Course Icon" width={18} height={18} />
+                  <Link href={`/${item.toLowerCase()}`} className="text-sm">{item}</Link>
+=======
                 <li
                   key={idx}
                   className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-0 transition"
@@ -96,6 +142,7 @@ const Sidebar: React.FC = () => {
                   <Link href={`/${item.toLowerCase()}`} className="text-sm">
                     {item}
                   </Link>
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
                 </li>
               ))}
             </ul>
@@ -112,4 +159,8 @@ const Sidebar: React.FC = () => {
   );
 };
 
+<<<<<<< HEAD
 export default Sidebar;
+=======
+export default Sidebar;
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd

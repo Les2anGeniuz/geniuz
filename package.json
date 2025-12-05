@@ -27,7 +27,21 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.5",
+    "nodemon": "^3.1.10",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "description": "This is a Next.js project bootstrapped with create-next-app.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Les2anGeniuz/geniuz.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Les2anGeniuz/geniuz/issues"
+  },
+  "homepage": "https://github.com/Les2anGeniuz/geniuz#readme"
 }

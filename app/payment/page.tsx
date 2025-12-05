@@ -5,32 +5,65 @@ import { useState } from "react";
 
 export default function PaymentPage() {
   const [selected, setSelected] = useState("");
-  const router = useRouter(); 
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const handlePayment = (e: React.FormEvent) => {
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+
+  const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selected) {
       alert("Silakan pilih metode pembayaran terlebih dahulu!");
       return;
     }
 
-    alert(`Pembayaran dengan metode ${selected} berhasil!`);
-    router.push("/payment/success"); 
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const idPendaftaran = typeof window !== "undefined" ? localStorage.getItem("idPendaftaran") : null;
+
+    if (!token || !idPendaftaran) {
+      alert("Data pendaftaran tidak ditemukan, silakan ulangi proses.");
+      router.push("/data-diri");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/pembayaran`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          id_Pendaftaran: Number(idPendaftaran),
+          jumlah_bayar: 5999000,
+          metode_pembayaran: selected,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Gagal memproses pembayaran");
+      }
+
+      router.push("/payment/success");
+    } catch (err: any) {
+      alert(err?.message || "Terjadi kesalahan saat pembayaran");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[url('/background.png')] bg-cover bg-center">
-      {/* Logo */}
       <div className="absolute top-9">
         <Image src="/logo_putih.svg" alt="Les2an Geniuz" width={150} height={50} />
       </div>
 
       <div className="bg-white/95 backdrop-blur-md p-10 rounded-3xl shadow-xl w-full max-w-[600px] max-h-[80vh] mt-30 text-center">
-        {/* Title */}
         <h1 className="text-5xl font-extrabold text-gray-900 mb-2">Pembayaran</h1>
         <p className="text-gray-500 mb-8">Selesaikan pembayaran untuk melanjutkan.</p>
 
-        {/* Info Tagihan */}
         <div className="bg-[#f9f9f9] border border-gray-300 rounded-2xl py-4 mb-6 text-left px-6">
           <p className="font-semibold text-gray-800 text-lg mb-1">Paket Langganan Geniuz</p>
           <p className="text-gray-500">Berlaku hingga setahun kedepan</p>
@@ -40,7 +73,6 @@ export default function PaymentPage() {
           </div>
         </div>
 
-        {/* Form Pembayaran */}
         <form onSubmit={handlePayment} className="space-y-5">
           <p className="text-left font-regular text-gray-500 mb-2">Pilih Metode Pembayaran:</p>
 
@@ -63,9 +95,10 @@ export default function PaymentPage() {
 
           <button
             type="submit"
-            className="w-full bg-[#FFF000] text-gray-900 font-bold py-3 rounded-full hover:bg-[#f7ca00] transition"
+            className="w-full bg-[#FFF000] text-gray-900 font-bold py-3 rounded-full hover:bg-[#f7ca00] transition disabled:opacity-60"
+            disabled={loading}
           >
-            Bayar Sekarang
+            {loading ? "Memproses..." : "Bayar Sekarang"}
           </button>
         </form>
       </div>

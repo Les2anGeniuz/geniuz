@@ -6,29 +6,61 @@ import { useState } from "react";
 export default function RegisterPage() {
   const router = useRouter();
 
-  // state sederhana buat simpan input user
   const [formData, setFormData] = useState({
     nama: "",
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
-  // handler submit
-  const handleSubmit = (e: React.FormEvent) => {
+  // URL backend dari env (fallback ke localhost:5000)
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setErr(null);
 
     // validasi sederhana
     if (!formData.nama || !formData.email || !formData.password) {
-      alert("Semua kolom harus diisi!");
+      setErr("Semua kolom wajib diisi.");
       return;
     }
 
-    // nanti di sini bisa ditambah POST ke backend API
-    // contoh: await fetch('/api/register', { method: 'POST', body: JSON.stringify(formData) })
+    setLoading(true);
+    try {
+      // backend mengharapkan: nama_lengkap, email, password, id_Fakultas (opsional)
+      const payload: any = {
+        nama_lengkap: formData.nama.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+      };
 
-    // setelah register berhasil → pindah ke form data diri
-    router.push("/data-diri");
-  };
+      const res = await fetch(`${API}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Registrasi gagal");
+      }
+
+      // simpan token (opsional, bila ingin langsung login)
+      if (data?.access_token) {
+        localStorage.setItem("token", data.access_token);
+      }
+
+      // arahkan ke form data diri
+      router.push("/data-diri");
+    } catch (e: any) {
+      setErr(e?.message || "Registrasi gagal");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[url('/background.png')] bg-cover bg-center">
@@ -50,6 +82,7 @@ export default function RegisterPage() {
             value={formData.nama}
             onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
             className="w-full bg-gray-100 text-gray-700 rounded-full px-4 py-3 border border-gray-500 focus:ring-2 focus:ring-[#FFF000] focus:outline-none"
+            required
           />
           <input
             type="email"
@@ -57,6 +90,7 @@ export default function RegisterPage() {
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             className="w-full bg-gray-100 text-gray-700 rounded-full px-4 py-3 border border-gray-500 focus:ring-2 focus:ring-[#FFF000] focus:outline-none"
+            required
           />
           <input
             type="password"
@@ -64,14 +98,19 @@ export default function RegisterPage() {
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             className="w-full bg-gray-100 text-gray-700 rounded-full px-4 py-3 border border-gray-500 focus:ring-2 focus:ring-[#FFF000] focus:outline-none"
+            required
           />
+          
+          {/* Error */}
+          {err && <p className="text-red-600 text-sm">{err}</p>}
 
           {/* Button Register */}
           <button
             type="submit"
-            className="w-full bg-[#FFF000] text-gray-900 font-bold py-3 rounded-full hover:bg-[#f7ca00] transition"
+            className="w-full bg-[#FFF000] text-gray-900 font-bold py-3 rounded-full hover:bg-[#f7ca00] transition disabled:opacity-60"
+            disabled={loading}
           >
-            Register
+            {loading ? "Memproses..." : "Register"}
           </button>
         </form>
 

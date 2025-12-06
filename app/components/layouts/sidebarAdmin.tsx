@@ -1,10 +1,37 @@
 "use client";
 
+<<<<<<< HEAD
 import Link from "next/link";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useRouter } from "next/navigation"; // Import useRouter untuk redirect
+=======
+<<<<<<< HEAD
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+=======
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
+import {
+  Home2Linear,
+  ChartSquareLinear,
+  BookLinear,
+  DocumentTextLinear,
+  UserLinear,
+<<<<<<< HEAD
+} from "solar-icon-set";
+import Image from "next/image";
+
+const Sidebar = () => {
+  const pathname = usePathname();
+=======
+  Logout3Linear,
+} from "solar-icon-set";
+>>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
 
 interface UserData {
   name: string;
@@ -55,6 +82,7 @@ const Sidebar: React.FC = () => {
 
     fetchUserData();
   }, []);
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
 
   // Fungsi untuk menangani logout
   const handleLogout = async () => {
@@ -64,6 +92,7 @@ const Sidebar: React.FC = () => {
   };
 
   return (
+<<<<<<< HEAD
     <div className="fixed top-16 left-0 h-full w-64 bg-white shadow-lg z-40">
       <div className="flex flex-col p-4 space-y-6">
         {/* User Info */}
@@ -74,6 +103,103 @@ const Sidebar: React.FC = () => {
 
         {/* Menu Utama */}
         <div className="ml-4 mb-3 font-semibold text-[#064479] text-sm">Menu Utama</div>
+=======
+    <aside className="fixed top-0 left-0 h-full w-64 bg-[#F8FAFC] border-r border-gray-200 flex flex-col z-40">
+      {/* Logo */}
+<<<<<<< HEAD
+      <div className="p-6 border-b border-gray-200">
+        <Image
+            src="/logo_geniuz.png"
+            alt="Logo Les-lesan Geniuz"
+            width={100}
+            height={20}
+            priority
+=======
+      <div className="p-6 border-b border-gray-200 flex items-center justify-center">
+        <Image
+          src="/logo_geniuz.png"
+          alt="Logo Les-lesan Geniuz"
+          width={110}
+          height={30}
+          priority
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
+        />
+      </div>
+
+      {/* Admin Info */}
+      <div className="px-6 py-4 border-b border-gray-200">
+<<<<<<< HEAD
+        <p className="text-sm font-semibold text-gray-900">John Doe</p>
+        <p className="text-xs text-gray-500">Administrator</p>
+=======
+        <p className="text-sm font-semibold text-gray-900">
+          {user?.name || "Loading..."}
+        </p>
+        <p className="text-xs text-gray-500">{user?.email || "—"}</p>
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
+      </div>
+
+      {/* Menu */}
+      <nav className="flex-1 px-4 py-4 space-y-6 overflow-y-auto">
+<<<<<<< HEAD
+        {/* Overview */}
+=======
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
+        <div>
+          <p className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+            Overview
+          </p>
+          <ul className="space-y-1">
+            {menuOverview.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.name}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center space-x-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive(
+                      item.href
+                    )}`}
+                  >
+                    <Icon size={18} />
+                    <span>{item.name}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+<<<<<<< HEAD
+        {/* Management */}
+=======
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
+        <div>
+          <p className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+            Management
+          </p>
+          <ul className="space-y-1">
+            {menuManagement.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.name}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center space-x-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive(
+                      item.href
+                    )}`}
+                  >
+                    <Icon size={18} />
+                    <span>{item.name}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </nav>
+<<<<<<< HEAD
+=======
+>>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
 
         {/* Navigation */}
         <ul className="flex flex-col gap-3 font-medium text-[#0a4378]">
@@ -118,8 +244,21 @@ const Sidebar: React.FC = () => {
           <span className="text-sm">Logout</span>
         </div>
       </div>
+<<<<<<< HEAD
     </div>
   );
 };
 
 export default Sidebar;
+=======
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
+    </aside>
+  );
+};
+
+<<<<<<< HEAD
+export default Sidebar;
+=======
+export default SidebarAdmin;
+>>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
+>>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea

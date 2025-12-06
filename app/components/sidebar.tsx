@@ -3,20 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
-<<<<<<< HEAD
+import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
-=======
-import { supabase } from "../../lib/supabaseClient";
-<<<<<<< HEAD
-import { useRouter } from "next/navigation"; // Import useRouter untuk redirect
-=======
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
->>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
 
 interface UserData {
   name: string;
   fakultas: string;
-  classes: string[]; // Menyimpan kelas yang diambil oleh user
+  classes: string[];
 }
 
 const Sidebar: React.FC = () => {
@@ -25,205 +18,186 @@ const Sidebar: React.FC = () => {
     fakultas: "",
     classes: [],
   });
-  const router = useRouter(); // Untuk redirect ke halaman login setelah logout
+  const [isLoading, setIsLoading] = useState(true);
+
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const fetchUserData = async () => {
-<<<<<<< HEAD
-      // Mendapatkan user yang sedang login menggunakan Supabase
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-=======
-<<<<<<< HEAD
-      const userId = "YOUR_USER_ID"; // Replace with valid user ID
-      const { data, error } = await supabase
-        .from("users")
-        .select("nama_lengkap, fakultas:nama_fakultas") 
-        .eq("id_User", userId) 
-        .single(); 
-=======
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
->>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-      if (userError || !user) {
-        console.log("User not logged in");
+      if (authError || !user) {
         return;
       }
 
-      const userId = user.id;
+      // Tampilkan nama sementara dari email/metadata biar tidak "Memuat..."
+      const tempName = user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
 
-<<<<<<< HEAD
-      // Mengambil data profil dari API backend menggunakan `/me`
-      const res = await fetch(`/api/me`, {
-        headers: {
-          Authorization: `Bearer ${user.access_token}`,
-        },
-      });
-=======
-      const { data, error } = await supabase
-        .from("users")
-        .select("nama_lengkap, nama_fakultas")
-        .eq("id_User", userId)
-        .single();
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
->>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
+      setUserData(prev => ({
+        ...prev,
+        name: prev.name || tempName,
+        fakultas: prev.fakultas || "...",
+      }));
 
-      const result = await res.json();
+      try {
+        const { data: userProfile } = await supabase
+          .from("User")
+          .select("nama_lengkap, fakultas")
+          .eq("email", user.email)
+          .single();
 
-      if (res.ok) {
-        // Mengupdate state dengan data user
-        setUserData({
-<<<<<<< HEAD
-          name: result.nama_lengkap || "Nama Tidak Ditemukan", // Fallback jika nama tidak ditemukan
-          fakultas: result.nama_fakultas || "Fakultas Tidak Ditemukan", // Fallback jika fakultas tidak ditemukan
-          classes: result.classes || [], // Menyimpan kelas yang diambil user
-=======
-          name: data.nama_lengkap,
-<<<<<<< HEAD
-          fakultas: data.fakultas,
-=======
-          fakultas: data.nama_fakultas,
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
->>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
-        });
-      } else {
-        console.error("Gagal ambil data user:", result.error);
+        if (userProfile) {
+          setUserData({
+            name: userProfile.nama_lengkap || tempName,
+            fakultas: userProfile.fakultas || "-",
+            classes: [],
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchUserData();
-  }, []);
+  }, [router]);
 
-  // Fungsi untuk menangani logout
   const handleLogout = async () => {
-    await supabase.auth.signOut(); // Logout dari Supabase
-    localStorage.removeItem("token"); // Menghapus token dari localStorage (jika digunakan)
-    router.push("/login"); // Redirect ke halaman login setelah logout
+    await supabase.auth.signOut();
+    localStorage.removeItem("token");
+    router.push("/login");
+  };
+
+  // Logic style: Aktif = Biru, Tidak Aktif = Biasa (Hover Abu)
+  const getLinkClass = (path: string) => {
+    const isActive = pathname === path;
+    const base = "flex items-center gap-3 p-2 rounded-md ml-4 transition-all duration-200 text-sm font-medium w-full cursor-pointer";
+
+    if (isActive) {
+      return `${base} bg-[#064479] text-white shadow-md`;
+    }
+    return `${base} text-[#0a4378] hover:bg-gray-100`;
   };
 
   return (
-<<<<<<< HEAD
-    <div className="fixed top-16 left-0 h-full w-64 bg-white shadow-lg z-40"> {/* Sidebar starts below navbar */}
-      <div className="flex flex-col p-4 space-y-6">
+    <div className="fixed top-16 left-0 h-full w-64 bg-white shadow-xl z-40 border-r border-gray-100">
+      <div className="flex flex-col p-4 space-y-6 h-full pb-20 overflow-y-auto">
+        
         {/* User Info */}
-        <div className="mb-4 flex flex-col items-start ml-4">
-          <div className="font-bold text-lg text-[#0a4378]">{userData.name}</div>
-          <span className="text-sm text-gray-500">{userData.fakultas}</span>
-        </div>
-
-        {/* Navigation Menu */}
-        <ul className="flex flex-col gap-3 font-medium text-[#0a4378]">
-          <li className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-4 transition">
-            <Image src="/home.svg" alt="Home Icon" width={18} height={18} />
-            <Link href="/" className="text-sm">Beranda</Link>
-          </li>
-=======
-    <div className="fixed top-16 left-0 h-full w-64 bg-white shadow-lg z-40">
-      <div className="flex flex-col p-4 space-y-6">
-        {/* User Info */}
-        <div className="mb-4 flex flex-col items-start ml-4">
-          <div className="font-bold text-lg text-[#0a4378]">{userData.name || "Loading..."}</div>
-          <span className="text-sm text-gray-500">{userData.fakultas || ""}</span>
+        <div className="mb-2 flex flex-col items-start ml-4 mt-2">
+          {isLoading && !userData.name ? (
+            <div className="animate-pulse space-y-2">
+               <div className="h-5 w-32 bg-gray-200 rounded"></div>
+               <div className="h-3 w-20 bg-gray-200 rounded"></div>
+            </div>
+          ) : (
+            <>
+              <div className="font-bold text-lg text-[#0a4378] capitalize">
+                {userData.name}
+              </div>
+              <span className="text-xs text-gray-500 font-medium mt-1">
+                {userData.fakultas}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Menu Utama */}
-        <div className="ml-4 mb-3 font-semibold text-[#064479] text-sm">Menu Utama</div>
+        <div>
+          <div className="ml-4 mb-3 font-bold text-[#064479] text-xs uppercase tracking-wider opacity-80">
+            Menu Utama
+          </div>
 
-        {/* Navigation */}
-        <ul className="flex flex-col gap-3 font-medium text-[#0a4378]">
-          <li className="flex items-center gap-3 hover:bg-gray-300 hover:text-white p-2 rounded-md ml-4 transition">
-            <Image src="/beranda.svg" alt="Home Icon" width={18} height={18} />
-            <Link href="/" className="text-sm">Beranda</Link>
-          </li>
+          <ul className="flex flex-col gap-2">
+            <li>
+              <Link href="/dashboard" className={getLinkClass("/dashboard")}>
+                <Image 
+                  src="/home.svg" 
+                  alt="Home" 
+                  width={20} 
+                  height={20} 
+                  className={pathname === "/dashboard" ? "brightness-0 invert" : ""} 
+                />
+                <span>Beranda</span>
+              </Link>
+            </li>
 
-<<<<<<< HEAD
-          <li className="flex items-center gap-3 hover:bg-gray-300 hover:text-white p-2 rounded-md ml-4 transition">
-=======
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
-          <li className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-4 transition">
->>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
-            <Image src="/setting.svg" alt="Settings Icon" width={18} height={18} />
-            <Link href="/settings" className="text-sm">Pengaturan</Link>
-          </li>
-<<<<<<< HEAD
-=======
+            <li>
+              <Link href="/settings" className={getLinkClass("/settings")}>
+                <Image 
+                  src="/setting.svg" 
+                  alt="Settings" 
+                  width={20} 
+                  height={20} 
+                  className={pathname === "/settings" ? "brightness-0 invert" : ""}
+                />
+                <span>Pengaturan</span>
+              </Link>
+            </li>
 
-<<<<<<< HEAD
-          <li className="flex items-center gap-3 hover:bg-gray-300 hover:text-white p-2 rounded-md ml-4 transition">
-=======
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
-          <li className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-4 transition">
->>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
-            <Image src="/callService.svg" alt="Call Service Icon" width={18} height={18} />
-            <Link href="/call-service" className="text-sm">Call Service</Link>
-          </li>
+            <li>
+              <Link href="/call-service" className={getLinkClass("/call-service")}>
+                <Image 
+                  src="/callService.svg" 
+                  alt="Service" 
+                  width={20} 
+                  height={20} 
+                  className={pathname === "/call-service" ? "brightness-0 invert" : ""}
+                />
+                <span>Call Service</span>
+              </Link>
+            </li>
+          </ul>
+        </div>
 
-<<<<<<< HEAD
-          {/* Kelas Saya - Menampilkan kelas yang diambil oleh user */}
-          <li className="ml-4">
-            <div className="font-semibold text-[#064479] text-sm">Kelas Saya</div>
-            <ul className="flex flex-col gap-2 mt-2">
-              {userData.classes.length > 0 ? (
-                userData.classes.map((item, idx) => (
-                  <li key={idx} className="flex items-center gap-3 hover:bg-gray-300 hover:text-white p-2 rounded-md ml-0 transition">
-                    <Image src="/course.svg" alt="Course Icon" width={18} height={18} />
-                    <Link href={`/kelas/${item.toLowerCase()}`} className="text-sm">
-                      {item}
+        {/* Kelas Saya */}
+        <div>
+          <div className="ml-4 mb-3 font-bold text-[#064479] text-xs uppercase tracking-wider opacity-80">
+            Kelas Saya
+          </div>
+          <ul className="flex flex-col gap-2">
+            {userData.classes.length > 0 ? (
+              userData.classes.map((item, idx) => {
+                const path = `/kelas/${item.toLowerCase().replace(/\s+/g, '-')}`;
+                return (
+                  <li key={idx}>
+                    <Link href={path} className={getLinkClass(path)}>
+                      <Image 
+                        src="/course.svg" 
+                        alt="Course" 
+                        width={20} 
+                        height={20} 
+                        className={pathname === path ? "brightness-0 invert" : ""}
+                      />
+                      <span>{item}</span>
                     </Link>
                   </li>
-                ))
-              ) : (
-                <li className="text-sm text-gray-500">Tidak ada kelas yang diambil.</li>
-              )}
-=======
-<<<<<<< HEAD
-          {/* My Kelas Gua Section */}
-=======
-          {/* Kelas */}
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
-          <li className="ml-4">
-            <div className="font-semibold text-[#064479] text-sm">Kelas Saya</div>
-            <ul className="flex flex-col gap-2 mt-2">
-              {["DABD", "TCBA", "KBR", "ADT", "ROSBD", "ML", "BI"].map((item, idx) => (
-<<<<<<< HEAD
-                <li key={idx} className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-0 transition">
-                  <Image src="/courseIcons.svg" alt="Course Icon" width={18} height={18} />
-                  <Link href={`/${item.toLowerCase()}`} className="text-sm">{item}</Link>
-=======
-                <li
-                  key={idx}
-                  className="flex items-center gap-3 hover:bg-[#064479] hover:text-white p-2 rounded-md ml-0 transition"
-                >
-                  <Image src="/course.svg" alt="Course Icon" width={18} height={18} />
-                  <Link href={`/${item.toLowerCase()}`} className="text-sm">
-                    {item}
-                  </Link>
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
-                </li>
-              ))}
->>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
-            </ul>
-          </li>
-        </ul>
-
-        {/* Logout */}
-        <div className="mt-auto flex items-center gap-3 hover:bg-gray-300 hover:text-white p-2 rounded-md ml-4 transition cursor-pointer" onClick={handleLogout}>
-          <Image src="/logout.svg" alt="Logout Icon" width={18} height={18} />
-          <span className="text-sm">Logout</span>
+                );
+              })
+            ) : (
+              <li className="text-sm text-gray-400 italic ml-4 flex items-center gap-2">
+                <span className="text-xs">Belum ada kelas aktif.</span>
+              </li>
+            )}
+          </ul>
         </div>
+
+        {/* Logout Button */}
+        <div className="mt-auto pt-4 border-t border-gray-100">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 p-2 rounded-md ml-4 transition duration-200 text-sm font-medium w-full text-[#0a4378] hover:bg-gray-100"
+          >
+            <Image src="/logout.svg" alt="Logout" width={20} height={20} />
+            <span>Logout</span>
+          </button>
+        </div>
+
       </div>
     </div>
   );
 };
 
-<<<<<<< HEAD
 export default Sidebar;
-=======
-<<<<<<< HEAD
-export default Sidebar;
-=======
-export default Sidebar;
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
->>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea

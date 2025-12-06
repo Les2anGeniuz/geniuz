@@ -1,146 +1,144 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "../../lib/supabaseClient"; // Mengimpor client Supabase
+import { supabase } from "../../lib/supabaseClient";
 
 const Overview: React.FC = () => {
-  // State untuk menyimpan data pengguna dan statistik
   const [userData, setUserData] = useState<any>(null);
   const [statistics, setStatistics] = useState({
     totalClasses: 0,
     completedTasks: 0,
     progress: 0,
   });
-  const [faculty, setFaculty] = useState<string>(""); // Menyimpan nama fakultas
-  const [classes, setClasses] = useState<string>(""); // Menyimpan nama kelas
+  const [faculty, setFaculty] = useState<string>(""); 
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: user, error: userError } = await supabase.auth.getUser(); // Mendapatkan user yang sedang login
-      if (user) {
+      const { data: user } = await supabase.auth.getUser();
+
+      if (user?.user) {
         try {
-          // Ambil data pengguna dari tabel `users`
+          // Ambil Data User
           const { data, error } = await supabase
-            .from("users")
-            .select("nama_lengkap, profile_picture, university, faculty_id, class_id")
-            .eq("id_User", user.id)
+            .from("User") 
+            .select("nama_lengkap, university, faculty_id, class_id")
+            .eq("email", user.user.email)
             .single();
 
-          if (error) {
-            console.error("Error fetching user data:", error.message);
-            setLoading(false);
-          } else {
-            setUserData(data); // Set data pengguna ke state
-            // Ambil fakultas dan kelas berdasarkan ID
-            fetchFacultyAndClass(data.faculty_id, data.class_id);
+          if (data) {
+            setUserData(data);
+            if (data.faculty_id) fetchFacultyName(data.faculty_id);
+            else setFaculty("-"); // Nama fakultas default
           }
 
-          // Fetch statistics for total classes, completed tasks, and progress
-          const { data: statisticsData, error: statsError } = await supabase
-            .from("statistics") // Replace with the correct table for statistics
+          // Ambil Data Statistik
+          const { data: stats } = await supabase
+            .from("statistics")
             .select("total_classes, completed_tasks, progress")
-            .eq("user_id", user.id)
-            .single();
+            .eq("user_id", user.user.id)
+            .maybeSingle();
 
-          if (statsError) {
-            console.error("Error fetching statistics data:", statsError.message);
-            setLoading(false);
-          } else {
+          if (stats) {
             setStatistics({
-              totalClasses: statisticsData.total_classes,
-              completedTasks: statisticsData.completed_tasks,
-              progress: statisticsData.progress,
+              totalClasses: stats.total_classes || 0,
+              completedTasks: stats.completed_tasks || 0,
+              progress: stats.progress || 0,
             });
           }
-
         } catch (error) {
           console.error("Error:", error);
-          setLoading(false);
         }
-      } else {
-        console.log("No user logged in.");
-        setLoading(false);
       }
+      setLoading(false);
     };
 
-    // Ambil nama fakultas dan kelas berdasarkan ID
-    const fetchFacultyAndClass = async (facultyId: string, classId: string) => {
+    const fetchFacultyName = async (facultyId: string) => {
       try {
-        // Ambil data fakultas berdasarkan ID
-        const facultyResponse = await fetch(`/api/faculty/${facultyId}`);
-        const facultyData = await facultyResponse.json();
-        if (facultyData && facultyData.name) {
-          setFaculty(facultyData.name); // Set nama fakultas berdasarkan data API
-        } else {
-          setFaculty("Fakultas tidak ditemukan");
-        }
-
-        // Ambil data kelas berdasarkan ID
-        const classResponse = await fetch(`/api/classes/${classId}`);
-        const classData = await classResponse.json();
-        if (classData && classData.name) {
-          setClasses(classData.name); // Set nama kelas berdasarkan data API
-        } else {
-          setClasses("Kelas tidak ditemukan");
-        }
-      } catch (error) {
-        console.error("Error fetching faculty or class data:", error);
-        setFaculty("Fakultas tidak ditemukan");
-        setClasses("Kelas tidak ditemukan");
-      }
+        const res = await fetch(`/api/faculty/${facultyId}`);
+        const json = await res.json();
+        setFaculty(json?.name || "-");
+      } catch { setFaculty("-"); }
     };
 
-    fetchData(); // Memanggil fungsi fetchData saat komponen di-mount
+    fetchData();
   }, []);
 
-  // Jika masih loading, tampilkan loading
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="p-10 pt-24 text-gray-400">Sedang memuat data...</div>;
   }
 
-  // Jika data pengguna tidak tersedia, tampilkan nilai default
-  const name = userData?.nama_lengkap || "Althafino!";
-  const university = userData?.university || "Universitas Sebelas Maret (UNS)";
-  const profilePicture = userData?.profile_picture || "/default-profile.png"; // Gunakan gambar default jika tidak ada gambar profil
+  const name = userData?.nama_lengkap || "-";
+  const university = userData?.university || "-"; 
+  const profilePicture = "/default-profile.png"; // Gambar profil default
 
   return (
-    <div className="p-6 bg-white shadow-lg rounded-lg">
-      {/* Overview Title */}
-      <h2 className="text-3xl font-semibold text-[#064479] mb-4">Overview</h2>
+    <div className="w-full pt-24 px-8 pb-10">
+      {/* Judul Halaman */}
+      <h1 className="text-3xl font-semibold text-black mb-3">Overview</h1>
 
-      {/* Profile Card with Border */}
-      <div className="p-6 border border-gray-300 rounded-lg mb-4">
-        <div className="flex items-center">
+      {/* Bagian Profil - Lebarkan dan rapatkan */}
+      <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-6 mb-3 flex flex-col md:flex-row items-center gap-3 shadow-sm">
+        <div className="flex-shrink-0">
           <img
             src={profilePicture}
-            alt="Profile Picture"
-            className="w-20 h-20 rounded-full mr-6"
+            alt="Profile"
+            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md bg-gray-50"
+            onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/150"; }}
           />
-          <div>
-            <h2 className="text-2xl font-bold text-[#064479]">
-              Semangat Belajar, {name}
-            </h2>
-            <p className="text-sm text-gray-500">{university}</p>
-            <p className="text-sm text-gray-500">{faculty}</p> {/* Menampilkan fakultas */}
-            <p className="text-sm text-gray-500">{classes}</p> {/* Menampilkan kelas */}
-          </div>
+        </div>
+        <div className="flex-grow text-center md:text-left">
+          <h2 className="text-3xl font-bold text-[#09090b] mb-1 leading-tight">
+            Semangat Belajar, <br className="hidden md:block"/>
+            {name}!
+          </h2>
+          <p className="text-gray-600 text-lg mb-1 font-medium">{university}</p>
+          <p className="text-blue-500 font-bold text-base cursor-pointer hover:underline">
+            {faculty}
+          </p>
         </div>
       </div>
 
-      {/* Statistics Card - Semua statistik dalam satu baris */}
-      <div className="flex justify-between gap-4 mb-4">
-        <div className="p-4 border border-gray-300 rounded-lg text-center w-full">
-          <p className="text-xs text-gray-600">Total Kelas</p>
-          <h4 className="text-sm font-semibold text-[#064479]">{statistics.totalClasses} Kelas</h4>
+      {/* Grid Statistik - Lebarkan kartu dan perpendek jarak */}
+      <div className="flex justify-between w-full gap-6">
+        
+        {/* Kartu Total Kelas */}
+        <div className="w-[168px] bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="text-gray-700">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <span className="text-gray-500 font-medium text-sm">Total Kelas</span>
+          </div>
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-4xl font-bold text-[#09090b]">{statistics.totalClasses}</span>
+          </div>
         </div>
-        <div className="p-4 border border-gray-300 rounded-lg text-center w-full">
-          <p className="text-xs text-gray-600">Tugas Selesai</p>
-          <h4 className="text-sm font-semibold text-[#064479]">{statistics.completedTasks} Tugas</h4>
+
+        {/* Kartu Tugas Selesai */}
+        <div className="w-[168px] bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="text-gray-700">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <span className="text-gray-500 font-medium text-sm">Tugas Selesai</span>
+          </div>
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-4xl font-bold text-[#09090b]">{statistics.completedTasks}</span>
+          </div>
         </div>
-        <div className="p-4 border border-gray-300 rounded-lg text-center w-full">
-          <p className="text-xs text-gray-600">Progress Belajar</p>
-          <h4 className="text-sm font-semibold text-[#064479]">{statistics.progress}%</h4>
+
+        {/* Kartu Progres Belajar */}
+        <div className="w-[168px] bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="text-gray-700">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <span className="text-gray-500 font-medium text-sm">Progres Belajar</span>
+          </div>
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-4xl font-bold text-[#09090b]">{statistics.progress}%</span>
+          </div>
         </div>
       </div>
     </div>

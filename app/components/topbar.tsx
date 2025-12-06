@@ -36,7 +36,7 @@ const Topbar: React.FC = () => {
               alt="Profile Icon"
               width={40}  // Consistent with sidebar icon size
               height={40}
-              className="rounded-full"
+              className="rounded-full object-cover" // Tambahan object-cover agar gambar bulat sempurna
             />
           </Link>
         </div>
@@ -45,8 +45,4 @@ const Topbar: React.FC = () => {
   );
 };
 
-<<<<<<< HEAD
 export default Topbar;
-=======
-export default Topbar;
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd

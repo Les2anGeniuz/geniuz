@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "../lib/supabaseClient"; // Mengimpor client Supabase
+import { supabase } from "../../lib/supabaseClient"; // Mengimpor client Supabase
 
 const Overview: React.FC = () => {
   // State untuk menyimpan data pengguna dan statistik
@@ -11,6 +11,8 @@ const Overview: React.FC = () => {
     completedTasks: 0,
     progress: 0,
   });
+  const [faculty, setFaculty] = useState<string>(""); // Menyimpan nama fakultas
+  const [classes, setClasses] = useState<string>(""); // Menyimpan nama kelas
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -21,7 +23,7 @@ const Overview: React.FC = () => {
           // Ambil data pengguna dari tabel `users`
           const { data, error } = await supabase
             .from("users")
-            .select("nama_lengkap, profile_picture, university")
+            .select("nama_lengkap, profile_picture, university, faculty_id, class_id")
             .eq("id_User", user.id)
             .single();
 
@@ -30,6 +32,8 @@ const Overview: React.FC = () => {
             setLoading(false);
           } else {
             setUserData(data); // Set data pengguna ke state
+            // Ambil fakultas dan kelas berdasarkan ID
+            fetchFacultyAndClass(data.faculty_id, data.class_id);
           }
 
           // Fetch statistics for total classes, completed tasks, and progress
@@ -60,18 +64,45 @@ const Overview: React.FC = () => {
       }
     };
 
-    fetchData(); // Call the fetch function when the component mounts
+    // Ambil nama fakultas dan kelas berdasarkan ID
+    const fetchFacultyAndClass = async (facultyId: string, classId: string) => {
+      try {
+        // Ambil data fakultas berdasarkan ID
+        const facultyResponse = await fetch(`/api/faculty/${facultyId}`);
+        const facultyData = await facultyResponse.json();
+        if (facultyData && facultyData.name) {
+          setFaculty(facultyData.name); // Set nama fakultas berdasarkan data API
+        } else {
+          setFaculty("Fakultas tidak ditemukan");
+        }
+
+        // Ambil data kelas berdasarkan ID
+        const classResponse = await fetch(`/api/classes/${classId}`);
+        const classData = await classResponse.json();
+        if (classData && classData.name) {
+          setClasses(classData.name); // Set nama kelas berdasarkan data API
+        } else {
+          setClasses("Kelas tidak ditemukan");
+        }
+      } catch (error) {
+        console.error("Error fetching faculty or class data:", error);
+        setFaculty("Fakultas tidak ditemukan");
+        setClasses("Kelas tidak ditemukan");
+      }
+    };
+
+    fetchData(); // Memanggil fungsi fetchData saat komponen di-mount
   }, []);
 
-  // If still loading, display loading
+  // Jika masih loading, tampilkan loading
   if (loading) {
     return <div>Loading...</div>;
   }
 
-  // If user data is not available, show default values
+  // Jika data pengguna tidak tersedia, tampilkan nilai default
   const name = userData?.nama_lengkap || "Althafino!";
   const university = userData?.university || "Universitas Sebelas Maret (UNS)";
-  const profilePicture = userData?.profile_picture || "/default-profile.png"; // Use the default image if no profile picture is set
+  const profilePicture = userData?.profile_picture || "/default-profile.png"; // Gunakan gambar default jika tidak ada gambar profil
 
   return (
     <div className="p-6 bg-white shadow-lg rounded-lg">
@@ -91,11 +122,13 @@ const Overview: React.FC = () => {
               Semangat Belajar, {name}
             </h2>
             <p className="text-sm text-gray-500">{university}</p>
+            <p className="text-sm text-gray-500">{faculty}</p> {/* Menampilkan fakultas */}
+            <p className="text-sm text-gray-500">{classes}</p> {/* Menampilkan kelas */}
           </div>
         </div>
       </div>
 
-      {/* Statistics Card - Now all statistics are in one row */}
+      {/* Statistics Card - Semua statistik dalam satu baris */}
       <div className="flex justify-between gap-4 mb-4">
         <div className="p-4 border border-gray-300 rounded-lg text-center w-full">
           <p className="text-xs text-gray-600">Total Kelas</p>

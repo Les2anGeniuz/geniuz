@@ -130,80 +130,83 @@ export default function KelasPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F3F6FA]">
+    <div className="flex min-h-screen bg-[#F4F6F9]">
       <SidebarAdmin />
 
-      {/* MAIN CONTENT */}
+      {/* CONTENT */}
       <div className="flex-1 ml-64 flex flex-col">
 
         {/* NAVBAR */}
-        <div className="sticky top-0 bg-white shadow-sm h-16 flex items-center z-30">
+        <div className="sticky top-0 bg-white h-16 shadow-sm z-50 flex items-center px-4">
           <Navbar />
         </div>
 
-        {/* PAGE CONTENT AREA */}
-        <div className="flex-1 px-10 pb-8">
-
-          {/* PAGE HEADER STICKY */}
-          <div className="sticky top-16 bg-[#F3F6FA] pt-6 pb-4 z-20">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-[#002D5B]">Manajemen Kelas</h1>
-                <p className="text-sm text-gray-500">Buat, edit, dan atur daftar kelas</p>
-              </div>
-
-              <button
-                onClick={openAdd}
-                className="bg-[#002D5B] text-white px-5 py-2 rounded-full shadow text-sm"
-              >
-                + Buat Kelas
-              </button>
+        {/* PAGE HEADER STICKY*/}
+        <div className="sticky top-16 z-40 bg-[#F4F6F9] px-10 pt-5 pb-4 backdrop-blur">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-[#002D5B]">Manajemen Kelas</h1>
+              <p className="text-sm text-gray-500 mt-1">Buat, edit, dan atur daftar kelas</p>
             </div>
+
+            <button
+              onClick={openAdd}
+              className="bg-[#002D5B] text-white px-5 py-2 rounded-full shadow text-sm"
+            >
+              + Buat Kelas
+            </button>
           </div>
+        </div>
 
-          {/* MAIN CARD */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mt-4">
+        {/* MAIN AREA - scrolling area and centered content to avoid sidebar overlap */}
+        <div className="flex-1 px-10 pb-10 pt-4 overflow-y-auto">
+          <div className="max-w-[1400px] mx-auto space-y-6">
 
-            {/* FILTERS */}
-            <KelasFilters
-              search={search}
-              setSearch={setSearch}
-              setPageTo1={() => setMeta((m) => ({ ...m, page: 1 }))}
-            />
+            {/* MAIN CARD */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
 
-            {/* TABLE (ONLY THIS PART SCROLLS) */}
-            <div className="max-h-[420px] overflow-y-auto pr-2">
-              <KelasTable
-                data={kelas}
-                onEdit={openEdit}
-                onDelete={deleteKelas}
+              {/* FILTERS */}
+              <KelasFilters
+                search={search}
+                setSearch={setSearch}
+                setPageTo1={() => setMeta((m) => ({ ...m, page: 1 }))}
               />
-            </div>
 
-            {/* PAGINATION */}
-            <div className="flex justify-between items-center mt-4 text-xs text-gray-500">
-              <span>
-                Hal {meta.page} / {meta.totalPages} — Total {meta.total}
-              </span>
+              {/* TABLE (ONLY THIS PART SCROLLS) */}
+              <div className="max-h-[420px] overflow-y-auto pr-2">
+                <KelasTable
+                  data={kelas}
+                  onEdit={openEdit}
+                  onDelete={deleteKelas}
+                />
+              </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={meta.page <= 1}
-                  onClick={() => setMeta((m) => ({ ...m, page: m.page - 1 }))}
-                  className="px-3 py-1.5 rounded-full border disabled:opacity-40"
-                >
-                  Prev
-                </button>
+              {/* PAGINATION */}
+              <div className="flex justify-between items-center mt-4 text-xs text-gray-500">
+                <span>
+                  Hal {meta.page} / {meta.totalPages} — Total {meta.total}
+                </span>
 
-                <button
-                  disabled={meta.page >= meta.totalPages}
-                  onClick={() => setMeta((m) => ({ ...m, page: m.page + 1 }))}
-                  className="px-3 py-1.5 rounded-full border disabled:opacity-40"
-                >
-                  Next
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={meta.page <= 1}
+                    onClick={() => setMeta((m) => ({ ...m, page: m.page - 1 }))}
+                    className="px-3 py-1.5 rounded-full border disabled:opacity-40"
+                  >
+                    Prev
+                  </button>
+
+                  <button
+                    disabled={meta.page >= meta.totalPages}
+                    onClick={() => setMeta((m) => ({ ...m, page: m.page + 1 }))}
+                    className="px-3 py-1.5 rounded-full border disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             </div>
+
           </div>
         </div>
 

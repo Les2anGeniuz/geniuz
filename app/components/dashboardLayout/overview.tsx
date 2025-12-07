@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../../lib/supabaseClient";
 
 const Overview: React.FC = () => {
   const [userData, setUserData] = useState<any>(null);
@@ -14,13 +14,12 @@ const Overview: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    // ... (Logika fetch data sama persis, tidak saya ubah) ...
     const fetchData = async () => {
       const { data: user } = await supabase.auth.getUser();
-
       if (user?.user) {
         try {
-          // Ambil Data User
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from("User") 
             .select("nama_lengkap, university, faculty_id, class_id")
             .eq("email", user.user.email)
@@ -29,10 +28,9 @@ const Overview: React.FC = () => {
           if (data) {
             setUserData(data);
             if (data.faculty_id) fetchFacultyName(data.faculty_id);
-            else setFaculty("-"); // Nama fakultas default
+            else setFaculty("-");
           }
 
-          // Ambil Data Statistik
           const { data: stats } = await supabase
             .from("statistics")
             .select("total_classes, completed_tasks, progress")
@@ -46,13 +44,10 @@ const Overview: React.FC = () => {
               progress: stats.progress || 0,
             });
           }
-        } catch (error) {
-          console.error("Error:", error);
-        }
+        } catch (error) { console.error("Error:", error); }
       }
       setLoading(false);
     };
-
     const fetchFacultyName = async (facultyId: string) => {
       try {
         const res = await fetch(`/api/faculty/${facultyId}`);
@@ -60,25 +55,22 @@ const Overview: React.FC = () => {
         setFaculty(json?.name || "-");
       } catch { setFaculty("-"); }
     };
-
     fetchData();
   }, []);
 
-  if (loading) {
-    return <div className="p-10 pt-24 text-gray-400">Sedang memuat data...</div>;
-  }
+  if (loading) return <div className="text-gray-400">Sedang memuat data...</div>;
 
   const name = userData?.nama_lengkap || "-";
   const university = userData?.university || "-"; 
-  const profilePicture = "/default-profile.png"; // Gambar profil default
+  const profilePicture = "/default-profile.png"; 
 
   return (
-    <div className="w-full pt-24 px-8 pb-10">
-      {/* Judul Halaman */}
+    // PENTING: Container luar tanpa padding, tapi isinya tetap w-[600px]
+    <div className="w-full"> 
       <h1 className="text-3xl font-semibold text-black mb-3">Overview</h1>
 
-      {/* Bagian Profil - Lebarkan dan rapatkan */}
-      <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-6 mb-3 flex flex-col md:flex-row items-center gap-3 shadow-sm">
+      {/* Bagian Profil TETAP w-[600px] */}
+      <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-6 mb-6 flex flex-col md:flex-row items-center gap-3 shadow-sm">
         <div className="flex-shrink-0">
           <img
             src={profilePicture}
@@ -99,47 +91,48 @@ const Overview: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid Statistik - Lebarkan kartu dan perpendek jarak */}
-      <div className="flex justify-between w-full gap-6">
-        
+      {/* Grid Statistik TETAP w-[600px] dan Flex layout */}
+      <div className="flex justify-between w-[600px] gap-6 mx-auto">
+
         {/* Kartu Total Kelas */}
-        <div className="w-[168px] bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
+        <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="text-gray-700">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
             <span className="text-gray-500 font-medium text-sm">Total Kelas</span>
           </div>
           <div className="flex items-baseline gap-2 mt-auto">
-            <span className="text-4xl font-bold text-[#09090b]">{statistics.totalClasses}</span>
+            <span className="text-2xl font-bold text-[#09090b]">{statistics.totalClasses}</span>
           </div>
         </div>
 
         {/* Kartu Tugas Selesai */}
-        <div className="w-[168px] bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
+        <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="text-gray-700">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             </div>
             <span className="text-gray-500 font-medium text-sm">Tugas Selesai</span>
           </div>
           <div className="flex items-baseline gap-2 mt-auto">
-            <span className="text-4xl font-bold text-[#09090b]">{statistics.completedTasks}</span>
+            <span className="text-2xl font-bold text-[#09090b]">{statistics.completedTasks}</span>
           </div>
         </div>
 
         {/* Kartu Progres Belajar */}
-        <div className="w-[168px] bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
+        <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="text-gray-700">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </div>
             <span className="text-gray-500 font-medium text-sm">Progres Belajar</span>
           </div>
-          <div className="flex items-baseline gap-2 mt-auto">
-            <span className="text-4xl font-bold text-[#09090b]">{statistics.progress}%</span>
+          <div className="flex items-center justify-center gap-2 mt-auto">
+            <span className="text-2xl font-bold text-[#09090b]">{statistics.progress}%</span>
           </div>
         </div>
+        
       </div>
     </div>
   );

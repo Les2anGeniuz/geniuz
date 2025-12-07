@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 
 interface UserData {
   name: string;
@@ -25,40 +25,62 @@ const Sidebar: React.FC = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
+      // 1. Cek Auth User (Login pakai apa?)
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-      if (authError || !user) {
-        return;
+      if (authError || !user || !user.email) {
+        return; 
       }
 
-      // Tampilkan nama sementara dari email/metadata biar tidak "Memuat..."
-      const tempName = user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
-
-      setUserData(prev => ({
-        ...prev,
-        name: prev.name || tempName,
-        fakultas: prev.fakultas || "...",
-      }));
+      // Default data sementara
+      let currentName = user.email.split('@')[0];
+      let currentFakultas = "-";
+      let classesList: string[] = [];
 
       try {
-        const { data: userProfile } = await supabase
+        // 2. Ambil data User dari tabel 'User' berdasarkan Email
+        // Kita butuh 'id_User' (angka) untuk query ke tabel Pendaftaran
+        const { data: dbUser } = await supabase
           .from("User")
-          .select("nama_lengkap, fakultas")
+          .select("id_User, nama_lengkap, fakultas") // Pastikan kolom id_User diambil
           .eq("email", user.email)
           .single();
 
-        if (userProfile) {
-          setUserData({
-            name: userProfile.nama_lengkap || tempName,
-            fakultas: userProfile.fakultas || "-",
-            classes: [],
-          });
+        if (dbUser) {
+          currentName = dbUser.nama_lengkap || currentName;
+          currentFakultas = dbUser.fakultas || "-";
+
+          // 3. Ambil Kelas dari tabel 'Pendaftaran' menggunakan 'id_User'
+          // Kita relasikan ke tabel 'Kelas' untuk ambil namanya
+          const { data: pendaftaranData } = await supabase
+            .from("Pendaftaran")
+            .select(`
+              Kelas (
+                nama_kelas
+              )
+            `)
+            .eq("id_User", dbUser.id_User); // Pakai id_User dari database, bukan auth user.id
+
+          if (pendaftaranData) {
+            // Mapping data agar jadi array string nama kelas saja
+            // @ts-ignore (Mengabaikan warning typescript jika struktur join agak kompleks)
+            classesList = pendaftaranData
+              .map((item: any) => item.Kelas?.nama_kelas)
+              .filter((name: string) => name); 
+          }
         }
       } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoading(false);
+        console.error("Error fetching data:", err);
       }
+
+      // 4. Update State
+      setUserData({
+        name: currentName,
+        fakultas: currentFakultas,
+        classes: classesList,
+      });
+
+      setIsLoading(false);
     };
 
     fetchUserData();
@@ -70,9 +92,8 @@ const Sidebar: React.FC = () => {
     router.push("/login");
   };
 
-  // Logic style: Aktif = Biru, Tidak Aktif = Biasa (Hover Abu)
   const getLinkClass = (path: string) => {
-    const isActive = pathname === path;
+    const isActive = pathname === path || pathname.startsWith(path + "/");
     const base = "flex items-center gap-3 p-2 rounded-md ml-4 transition-all duration-200 text-sm font-medium w-full cursor-pointer";
 
     if (isActive) {
@@ -87,14 +108,14 @@ const Sidebar: React.FC = () => {
         
         {/* User Info */}
         <div className="mb-2 flex flex-col items-start ml-4 mt-2">
-          {isLoading && !userData.name ? (
+          {isLoading ? (
             <div className="animate-pulse space-y-2">
                <div className="h-5 w-32 bg-gray-200 rounded"></div>
                <div className="h-3 w-20 bg-gray-200 rounded"></div>
             </div>
           ) : (
             <>
-              <div className="font-bold text-lg text-[#0a4378] capitalize">
+              <div className="font-bold text-lg text-[#0a4378] capitalize truncate w-48">
                 {userData.name}
               </div>
               <span className="text-xs text-gray-500 font-medium mt-1">
@@ -159,8 +180,10 @@ const Sidebar: React.FC = () => {
           </div>
           <ul className="flex flex-col gap-2">
             {userData.classes.length > 0 ? (
-              userData.classes.map((item, idx) => {
-                const path = `/kelas/${item.toLowerCase().replace(/\s+/g, '-')}`;
+              userData.classes.map((className, idx) => {
+                const slug = className.toLowerCase().replace(/\s+/g, '-');
+                const path = `/kelas/${slug}`;
+                
                 return (
                   <li key={idx}>
                     <Link href={path} className={getLinkClass(path)}>
@@ -169,9 +192,9 @@ const Sidebar: React.FC = () => {
                         alt="Course" 
                         width={20} 
                         height={20} 
-                        className={pathname === path ? "brightness-0 invert" : ""}
+                        className={pathname.startsWith(path) ? "brightness-0 invert" : ""}
                       />
-                      <span>{item}</span>
+                      <span className="truncate">{className}</span>
                     </Link>
                   </li>
                 );

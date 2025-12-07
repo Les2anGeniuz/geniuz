@@ -1,31 +1,47 @@
 "use client";
 
-import Sidebar from "../components/sidebar";
-import Topbar from "../components/topbar";
-import Overview from "../components/overview";   // Komponen Overview
-import SearchBar from "../components/searchbar"; // Komponen SearchBar
+import Sidebar from "../components/dashboardLayout/sidebar";
+import Topbar from "../components/dashboardLayout/topbar";
+import Overview from "../components/dashboardLayout/overview";
+import SearchBar from "../components/dashboardLayout/searchbar";
+import Activities from "../components/dashboardLayout/activity"; 
+import StatisticsChart from "../components/dashboardLayout/statisticChart"; 
+import Achievements from "../components/dashboardLayout/achievement"; // 1. Import komponen baru
 
 export default function DashboardPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar - Posisi Fixed di kiri */}
       <Sidebar />
-
-      {/* Topbar - Posisi Fixed di atas */}
       <Topbar />
 
-      {/* Search Bar */}
-      {/* Catatan: Pastikan CSS di SearchBar tidak menimpa Topbar sepenuhnya jika tidak diinginkan */}
-      <div className="fixed top-0 left-0 w-full z-50 pointer-events-none">
-        <SearchBar />
-      </div>
+      <div className="ml-64 pt-24 px-8 pb-10 w-full">
+        
+        {/* Search Bar di kanan atas */}
+        <div className="flex justify-end mb-6">
+          <SearchBar />
+        </div>
 
-      {/* Main Content Area */}
-      {/* ml-64 memberi ruang untuk Sidebar, pt-24 memberi ruang untuk Topbar */}
-      <div className="ml-64 pt-24 p-6 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Menampilkan Overview */}
-          <Overview />
+        {/* GRID LAYOUT 
+           Kita gunakan flex-col untuk mobile, dan flex-row untuk desktop.
+           items-start penting agar tinggi kolom independen.
+        */}
+        <div className="flex flex-col xl:flex-row gap-8 items-start">
+          
+          {/* === KOLOM KIRI (Overview + Statistics) === */}
+          <div className="flex flex-col gap-6 w-full xl:w-[600px] flex-shrink-0">
+            <Overview />
+            <StatisticsChart />
+          </div>
+
+          {/* === KOLOM KANAN (Activities + Achievements) === */}
+          {/* Tambahkan flex-col gap-6 agar ada jarak antar card */}
+          <div className="flex-1 w-full min-w-0 flex flex-col gap-6"> 
+            <Activities />
+            
+            {/* 2. Pasang Achievements di sini (di bawah Activities) */}
+            <Achievements />
+          </div>
+
         </div>
       </div>
     </div>

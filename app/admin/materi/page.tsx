@@ -11,12 +11,29 @@ import TaskForm from "../../components/materi/TaskForm";
 import TaskList from "../../components/materi/TaskList";
 import ModuleForm from "../../components/materi/ModuleForm";
 
+interface Kelas {
+  id_Kelas?: number;
+  id?: number;
+  nama_kelas?: string;
+  name?: string;
+  deskripsi?: string;
+}
+
+interface Module {
+  id: number;
+  title: string;
+  description: string;
+}
+
+interface Task {
+  [key: string]: unknown;
+}
+
 export default function AdminMateri() {
-  const [classes, setClasses] = useState<any[]>([]);
-  const [selected, setSelected] = useState<any | null>(null);
-  const [modules, setModules] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [classes, setClasses] = useState<Kelas[]>([]);
+  const [selected, setSelected] = useState<Kelas | null>(null);
+  const [modules, setModules] = useState<Module[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [showModuleForm, setShowModuleForm] = useState(false);
 
   // -----------------------------------------------------
@@ -25,15 +42,12 @@ export default function AdminMateri() {
   useEffect(() => {
     const load = async () => {
       try {
-        setLoading(true);
         const res = await fetch(`/api/kelas?limit=50`, { credentials: "same-origin" });
         const json = await res.json();
         if (!res.ok) throw new Error(json?.error || "Gagal ambil kelas");
         setClasses(json.data || []);
       } catch (err) {
         console.error(err);
-      } finally {
-        setLoading(false);
       }
     };
     load();
@@ -51,8 +65,6 @@ export default function AdminMateri() {
 
     const loadDetails = async () => {
       try {
-        setLoading(true);
-
         const [mRes, tRes] = await Promise.all([
           fetch(`/api/materi?kelas=${selected.id_Kelas ?? selected.id}`, { credentials: "same-origin" }),
           fetch(`/api/tugas?kelas=${selected.id_Kelas ?? selected.id}`, { credentials: "same-origin" }),
@@ -62,7 +74,7 @@ export default function AdminMateri() {
         const tJson = await tRes.json();
 
         const materi = mJson.data || [];
-        const normalizedModules = materi.map((m: any) => ({
+        const normalizedModules = materi.map((m: { id_Materi: number; judul_materi: string; deskripsi?: string }) => ({
           id: m.id_Materi,
           title: m.judul_materi,
           description: m.deskripsi ?? "",
@@ -72,15 +84,13 @@ export default function AdminMateri() {
         setTasks(tJson.data || []);
       } catch (err) {
         console.error(err);
-      } finally {
-        setLoading(false);
       }
     };
 
     loadDetails();
   }, [selected]);
 
-  const handleAddTask = (t: any) => {
+  const handleAddTask = (t: Task) => {
     setTasks((prev) => [t, ...prev]);
   };
 

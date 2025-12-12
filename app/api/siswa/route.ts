@@ -192,9 +192,6 @@ export async function GET(req: Request) {
     let rows = rawRows.map((row) => {
       const idUser = row.User?.id_User ?? null;
       const idKelas = row.id_Kelas ?? null;
-      const key = `${idUser}-${idKelas ?? "null"}`;
-      const prog = idUser ? progressMap.get(key) : undefined;
-
       const lastUpdate = row.Last_update ?? null;
       const progressVal = row.Prsentase_Progress ?? 0;
       const status = getStatus(lastUpdate);

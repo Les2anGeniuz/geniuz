@@ -135,9 +135,20 @@ export default function KelasPage() {
   const deleteKelas = async (item: Kelas) => {
     if (!confirm(`Hapus kelas "${item.nama_kelas}"?`)) return;
 
-    const res = await fetch(`/api/kelas/${item.id_Kelas}`, { method: "DELETE" });
-    if (res.ok) fetchData();
-  };
+    try {
+        const res = await fetch(`/api/kelas/${item.id_Kelas}`, { method: "DELETE" });
+        const json = await res.json();
+
+        if (!res.ok) {
+            alert(json.error || "Gagal menghapus kelas");
+            return;
+        }
+        fetchData();
+    } catch (error) {
+        console.error("Gagal connect ke server", error);
+        alert("Terjadi kesalahan koneksi");
+    }
+};
 
   return (
     <div className="flex min-h-screen bg-[#F4F6F9]">

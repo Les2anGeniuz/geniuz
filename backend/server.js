@@ -14,6 +14,7 @@ import tugasRoutes from './routes/tugas.js'
 import pengumpulanTugasRoutes from './routes/pengumpulanTugas.js'
 import progressRoutes from './routes/progress.js'
 import mentorRoutes from './routes/mentor.js'
+import adminAuthRoutes from './routes/adminAuth.js'
 
 dotenv.config()
 
@@ -35,6 +36,7 @@ app.use('/api/tugas', tugasRoutes)
 app.use('/api/pengumpulan', pengumpulanTugasRoutes)
 app.use('/api/progress', progressRoutes)
 app.use('/api/mentor', mentorRoutes)
+app.use('/api/admin', adminAuthRoutes)
 
 app.listen(process.env.PORT || 5000, () => {
   console.log(`Backend ready on http://localhost:${process.env.PORT || 5000}`)

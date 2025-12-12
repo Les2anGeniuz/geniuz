@@ -1,15 +1,3 @@
-<<<<<<< HEAD
-import Navbar from "./components/navbar";
-import HeroSection from "./components/heroSection";
-
-export default function Login() {
-    return (
-        <>
-            <Navbar />
-            <HeroSection />
-        </>
-    );
-=======
 "use client";
 
 import React from "react";
@@ -86,5 +74,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
 }

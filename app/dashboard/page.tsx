@@ -6,7 +6,7 @@ import Overview from "../components/dashboardLayout/overview";
 import SearchBar from "../components/dashboardLayout/searchbar";
 import Activities from "../components/dashboardLayout/activity"; 
 import StatisticsChart from "../components/dashboardLayout/statisticChart"; 
-import Achievements from "../components/dashboardLayout/achievement"; // 1. Import komponen baru
+import Achievements from "../components/dashboardLayout/achievement"; 
 
 export default function DashboardPage() {
   return (

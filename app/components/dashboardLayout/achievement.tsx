@@ -17,19 +17,23 @@ const Achievements: React.FC = () => {
   useEffect(() => {
     const fetchAchievements = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data } = await supabase.auth.getUser();
+        const user = data?.user ?? null;
 
-        if (user) {
-          const { data, error } = await supabase
-            .from("achievements")
-            .select("*")
-            .eq("user_id", user.id);
+        if (!user) {
+          setAchievements([]);
+          return;
+        }
 
-          if (data) {
-            setAchievements(data);
-          } else if (error) {
-            console.error("Error fetching achievements:", error);
-          }
+        const { data: rows, error } = await supabase
+          .from("achievements")
+          .select("*")
+          .eq("user_id", user.id);
+
+        if (error) {
+          console.error("Error fetching achievements:", error);
+        } else if (rows) {
+          setAchievements(rows as Achievement[]);
         }
       } catch (error) {
         console.error("Error:", error);

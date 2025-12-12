@@ -1,6 +1,7 @@
 "use client";
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import Link from "next/link";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
@@ -11,24 +12,18 @@ import { useRouter } from "next/navigation"; // Import useRouter untuk redirect
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 =======
+=======
+>>>>>>> d9a17111979f7598c3d34cc270d6f7ad2701c0cf
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
 import {
   Home2Linear,
   ChartSquareLinear,
   BookLinear,
   DocumentTextLinear,
   UserLinear,
-<<<<<<< HEAD
-} from "solar-icon-set";
-import Image from "next/image";
-
-const Sidebar = () => {
-  const pathname = usePathname();
-=======
   Logout3Linear,
 } from "solar-icon-set";
 >>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
@@ -82,7 +77,6 @@ const Sidebar: React.FC = () => {
 
     fetchUserData();
   }, []);
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
 
   // Fungsi untuk menangani logout
   const handleLogout = async () => {
@@ -106,15 +100,6 @@ const Sidebar: React.FC = () => {
 =======
     <aside className="fixed top-0 left-0 h-full w-64 bg-[#F8FAFC] border-r border-gray-200 flex flex-col z-40">
       {/* Logo */}
-<<<<<<< HEAD
-      <div className="p-6 border-b border-gray-200">
-        <Image
-            src="/logo_geniuz.png"
-            alt="Logo Les-lesan Geniuz"
-            width={100}
-            height={20}
-            priority
-=======
       <div className="p-6 border-b border-gray-200 flex items-center justify-center">
         <Image
           src="/logo_geniuz.png"
@@ -122,29 +107,19 @@ const Sidebar: React.FC = () => {
           width={110}
           height={30}
           priority
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
         />
       </div>
 
       {/* Admin Info */}
       <div className="px-6 py-4 border-b border-gray-200">
-<<<<<<< HEAD
-        <p className="text-sm font-semibold text-gray-900">John Doe</p>
-        <p className="text-xs text-gray-500">Administrator</p>
-=======
         <p className="text-sm font-semibold text-gray-900">
           {user?.name || "Loading..."}
         </p>
         <p className="text-xs text-gray-500">{user?.email || "—"}</p>
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
       </div>
 
       {/* Menu */}
       <nav className="flex-1 px-4 py-4 space-y-6 overflow-y-auto">
-<<<<<<< HEAD
-        {/* Overview */}
-=======
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
         <div>
           <p className="text-xs font-semibold text-gray-500 mb-2 uppercase">
             Overview
@@ -169,10 +144,6 @@ const Sidebar: React.FC = () => {
           </ul>
         </div>
 
-<<<<<<< HEAD
-        {/* Management */}
-=======
->>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
         <div>
           <p className="text-xs font-semibold text-gray-500 mb-2 uppercase">
             Management
@@ -198,8 +169,11 @@ const Sidebar: React.FC = () => {
         </div>
       </nav>
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
+=======
+>>>>>>> d9a17111979f7598c3d34cc270d6f7ad2701c0cf
 
         {/* Navigation */}
         <ul className="flex flex-col gap-3 font-medium text-[#0a4378]">
@@ -245,6 +219,7 @@ const Sidebar: React.FC = () => {
         </div>
       </div>
 <<<<<<< HEAD
+<<<<<<< HEAD
     </div>
   );
 };
@@ -252,13 +227,15 @@ const Sidebar: React.FC = () => {
 export default Sidebar;
 =======
 >>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
+=======
+>>>>>>> d9a17111979f7598c3d34cc270d6f7ad2701c0cf
     </aside>
   );
 };
 
-<<<<<<< HEAD
-export default Sidebar;
-=======
 export default SidebarAdmin;
+<<<<<<< HEAD
 >>>>>>> 9cd2c56285d9d590dfa31b3b9564b7362b191ccd
 >>>>>>> a3e1874b20491355104a67577e48094d4ea3c6ea
+=======
+>>>>>>> d9a17111979f7598c3d34cc270d6f7ad2701c0cf

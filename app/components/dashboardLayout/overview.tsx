@@ -14,47 +14,65 @@ const Overview: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // ... (Logika fetch data sama persis, tidak saya ubah) ...
     const fetchData = async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (user?.user) {
-        try {
-          const { data } = await supabase
-            .from("User") 
-            .select("nama_lengkap, university, faculty_id, class_id")
-            .eq("email", user.user.email)
-            .single();
+      try {
+        const { data } = await supabase.auth.getUser();
+        const user = data?.user ?? null;
 
-          if (data) {
-            setUserData(data);
-            if (data.faculty_id) fetchFacultyName(data.faculty_id);
-            else setFaculty("-");
-          }
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
-          const { data: stats } = await supabase
-            .from("statistics")
-            .select("total_classes, completed_tasks, progress")
-            .eq("user_id", user.user.id)
-            .maybeSingle();
+        const { data: userRow, error: userErr } = await supabase
+          .from("User")
+          .select("nama_lengkap, university, faculty_id, class_id")
+          .eq("email", user.email)
+          .single();
 
-          if (stats) {
-            setStatistics({
-              totalClasses: stats.total_classes || 0,
-              completedTasks: stats.completed_tasks || 0,
-              progress: stats.progress || 0,
-            });
-          }
-        } catch (error) { console.error("Error:", error); }
+        if (userErr) console.error("Error fetching user row:", userErr);
+        if (userRow) {
+          setUserData(userRow);
+          if (userRow.faculty_id) await fetchFacultyName(String(userRow.faculty_id));
+          else setFaculty("-");
+        }
+
+        const { data: stats, error: statsErr } = await supabase
+          .from("statistics")
+          .select("total_classes, completed_tasks, progress")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (statsErr) console.error("Error fetching stats:", statsErr);
+        if (stats) {
+          setStatistics({
+            totalClasses: stats.total_classes || 0,
+            completedTasks: stats.completed_tasks || 0,
+            progress: stats.progress || 0,
+          });
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
+
+    // The backend route is app/api/fakultas; fetch all and find the matching id.
     const fetchFacultyName = async (facultyId: string) => {
       try {
-        const res = await fetch(`/api/faculty/${facultyId}`);
+        const res = await fetch(`/api/fakultas`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
-        setFaculty(json?.name || "-");
-      } catch { setFaculty("-"); }
+        const list: any[] = json?.data ?? [];
+        const found = list.find((f) => String(f.id_Fakultas) === String(facultyId));
+        setFaculty(found?.nama_fakultas || "-");
+      } catch (e) {
+        console.error("Error fetching fakultas:", e);
+        setFaculty("-");
+      }
     };
+
     fetchData();
   }, []);
 

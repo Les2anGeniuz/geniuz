@@ -16,6 +16,7 @@ import progressRoutes from './routes/progress.js'
 import mentorRoutes from './routes/mentor.js'
 import adminAuthRoutes from './routes/adminAuth.js'
 import adminRoutes from './routes/admin.js'
+import dashboardRoutes from './routes/dashboard.js'
 
 dotenv.config()
 
@@ -39,6 +40,7 @@ app.use('/api/progress', progressRoutes)
 app.use('/api/mentor', mentorRoutes)
 app.use('/api/admin', adminAuthRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/dashboard', dashboardRoutes)
 
 app.listen(process.env.PORT || 5000, () => {
   console.log(`Backend ready on http://localhost:${process.env.PORT || 5000}`)

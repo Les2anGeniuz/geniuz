@@ -1,83 +1,173 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+// Pastikan path ini benar
 import SidebarAdmin from "../../components/layouts/sidebarAdmin";
 import Navbar from "../../components/layouts/navbarAdmin";
 
-import SiswaStats from "../../components/siswa/SiswaStats";
-import SiswaFilters from "../../components/siswa/SiswaFilters";
-import SiswaTable from "../../components/siswa/SiswaTable";
+import KelasFilters from "../../components/kelas/kelasFilters";
+import KelasTable from "../../components/kelas/kelasTable";
+import KelasModal from "../../components/kelas/kelasModal";
 
-export interface StudentRow {
-  id_user: string;
-  nama_lengkap: string;
-  email: string;
-  nama_kelas: string | null;
-  tanggal_masuk: string;     // ISO date string
-  terakhir_aktif: string | null;
-  progress: number | null;
-  status: string;            // "aktif" | "tidak_aktif" | etc
+interface Kelas {
+  id_Kelas: number;
+  nama_kelas: string;
+  deskripsi: string | null;
+  nama_fakultas: string | null;
+  nama_mentor: string | null;
 }
 
-interface Meta {
-  total: number;
-  page: number;
-  totalPages: number;
-  limit: number;
+interface Fakultas {
+  id_Fakultas: number;
+  nama_fakultas: string;
 }
 
-interface Stats {
-  total: number;
-  aktif: number;
-  avgProgress: number;
-  newRegistrations: number;
+interface Mentor {
+  id_Mentor: number;
+  nama_mentor: string;
 }
 
-export default function SiswaPage() {
-  const [data, setData] = useState<StudentRow[]>([]);
-  const [meta, setMeta] = useState<Meta>({
-    total: 0,
-    page: 1,
-    totalPages: 1,
-    limit: 15,
-  });
-
-  const [stats, setStats] = useState<Stats>({
-    total: 0,
-    aktif: 0,
-    avgProgress: 0,
-    newRegistrations: 0,
-  });
-
+export default function KelasPage() {
+  const [kelas, setKelas] = useState<Kelas[]>([]);
+  const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1, limit: 15 });
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<"all" | "aktif" | "tidak_aktif">("all");
+
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Kelas | null>(null);
+
+  const [nama_kelas, setNamaKelas] = useState("");
+  const [deskripsi, setDeskripsi] = useState("");
+  const [id_Fakultas, setIdFakultas] = useState("");
+  const [id_Mentor, setIdMentor] = useState("");
+
+  const [fakultas, setFakultas] = useState<Fakultas[]>([]);
+  const [mentor, setMentor] = useState<Mentor[]>([]);
+  const [loading, setLoading] = useState(false);
+
   const page = meta.page;
 
-  const fetchData = async () => {
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(meta.limit),
-    });
+  const fetchData = useCallback(async () => {
+    // Menambahkan try/catch untuk debugging
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: "15" });
+      if (search) params.set("search", search);
 
-    if (search) params.set("search", search);
-    if (status !== "all") params.set("status", status);
+      const res = await fetch(`/api/kelas?${params.toString()}`);
+      const json = await res.json();
 
-    const res = await fetch(`/api/siswa?${params.toString()}`);
-    const json = await res.json();
-
-    if (res.ok) {
-      setData(json.data);
-      setMeta(json.meta);
-      setStats(json.stats);
-    } else {
-      console.error(json);
+      if (res.ok) {
+        setKelas(json.data);
+        setMeta(json.meta);
+      } else {
+        // Log error jika status bukan 2xx
+        console.error("Failed to fetch data:", res.status, json.error);
+        setKelas([]);
+        setMeta({ total: 0, page: 1, totalPages: 1, limit: 15 });
+      }
+    } catch (err) {
+      console.error("Fetch data failed unexpectedly:", err);
+      setKelas([]);
+      setMeta({ total: 0, page: 1, totalPages: 1, limit: 15 });
     }
+  }, [page, search]);
+
+  const loadFakultas = async () => {
+    const res = await fetch("/api/fakultas");
+    const json = await res.json();
+    if (res.ok) setFakultas(json.data);
+  };
+
+  const loadMentor = async () => {
+    const res = await fetch("/api/mentor");
+    const json = await res.json();
+    if (res.ok) setMentor(json.data);
   };
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, status, page]);
+  }, [search, page, fetchData]);
+
+  const openAdd = () => {
+    setEditing(null);
+    setNamaKelas("");
+    setDeskripsi("");
+    setIdFakultas("");
+    setIdMentor("");
+
+    loadFakultas();
+    loadMentor();
+    setModalOpen(true);
+  };
+
+  const openEdit = (item: Kelas) => {
+    setEditing(item);
+    setNamaKelas(item.nama_kelas);
+    setDeskripsi(item.deskripsi || "");
+    // ID Fakultas/Mentor yang terkait dengan item yang diedit
+    // harus dicari dan di-set berdasarkan data yang ada
+    // (saat ini, data `item` hanya memiliki `nama_fakultas/mentor`,
+    // sehingga input form ID harus di-set setelah list fakultas/mentor
+    // dimuat atau perlu penyesuaian di API agar ID-nya ikut terkirim)
+    // Untuk saat ini, kita biarkan kosong/default saat edit dibuka
+    setIdFakultas(""); 
+    setIdMentor("");
+
+    loadFakultas();
+    loadMentor();
+    setModalOpen(true);
+  };
+
+  const saveKelas = async () => {
+    setLoading(true);
+
+    const body = {
+      nama_kelas,
+      deskripsi,
+      // Pastikan string kosong diubah menjadi null jika API mengharapkan null
+      id_Fakultas: id_Fakultas || null, 
+      id_Mentor: id_Mentor || null,
+    };
+
+    let res;
+
+    if (editing) {
+      res = await fetch(`/api/kelas/${editing.id_Kelas}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } else {
+      res = await fetch(`/api/kelas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    }
+
+    setLoading(false);
+
+    if (res.ok) {
+      setModalOpen(false);
+      fetchData(); // Muat ulang data setelah sukses
+    } else {
+      const errorJson = await res.json();
+      console.error("Save failed:", res.status, errorJson.error);
+      alert(`Gagal menyimpan kelas: ${errorJson.error || res.statusText}`);
+    }
+  };
+
+  const deleteKelas = async (item: Kelas) => {
+    if (!confirm(`Hapus kelas "${item.nama_kelas}"?`)) return;
+
+    const res = await fetch(`/api/kelas/${item.id_Kelas}`, { method: "DELETE" });
+    if (res.ok) {
+        fetchData(); // Muat ulang data setelah sukses hapus
+    } else {
+        const errorJson = await res.json();
+        console.error("Delete failed:", res.status, errorJson.error);
+        alert(`Gagal menghapus kelas: ${errorJson.error || res.statusText}`);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-[#F4F6F9]">
@@ -91,45 +181,51 @@ export default function SiswaPage() {
           <Navbar />
         </div>
 
-        {/* PAGE HEADER + STATS */}
+        {/* PAGE HEADER STICKY*/}
         <div className="sticky top-16 z-40 bg-[#F4F6F9] px-10 pt-5 pb-4 backdrop-blur">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-[#002D5B]">Manajemen Siswa</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Lacak progres siswa dan kelola pendaftaran
-              </p>
+              <h1 className="text-3xl font-bold text-[#002D5B]">Manajemen Kelas</h1>
+              <p className="text-sm text-gray-500 mt-1">Buat, edit, dan atur daftar kelas</p>
             </div>
+
+            <button
+              onClick={openAdd}
+              className="bg-[#002D5B] text-white px-5 py-2 rounded-full shadow text-sm"
+            >
+              + Buat Kelas
+            </button>
           </div>
         </div>
 
-        {/* MAIN AREA */}
+        {/* MAIN AREA - scrolling area and centered content to avoid sidebar overlap */}
         <div className="flex-1 px-10 pb-10 pt-4 overflow-y-auto">
           <div className="max-w-[1400px] mx-auto space-y-6">
-            
-            {/* STATS */}
-              <SiswaStats stats={stats} />
 
-            {/* CARD UTAMA */}
+            {/* MAIN CARD */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
 
               {/* FILTERS */}
-              <SiswaFilters
+              <KelasFilters
                 search={search}
-                setSearch={(value) => {
-                  setSearch(value);
-                  setMeta((m) => ({ ...m, page: 1 }));
-                }}
-                status={status}
-                setStatus={(value) => {
-                  setStatus(value);
-                  setMeta((m) => ({ ...m, page: 1 }));
-                }}
+                setSearch={setSearch}
+                setPageTo1={() => setMeta((m) => ({ ...m, page: 1 }))}
               />
 
-              {/* TABEL */}
-              <div className="max-h-[420px] overflow-y-auto pr-2 mt-4">
-                <SiswaTable data={data} />
+              {/* TABLE (ONLY THIS PART SCROLLS) */}
+              <div className="max-h-[420px] overflow-y-auto pr-2">
+                {/* Tambahkan pesan loading/kosong untuk clarity */}
+                {kelas.length === 0 && !loading ? (
+                    <div className="text-center py-10 text-gray-500">
+                        Tidak ada data kelas yang ditemukan.
+                    </div>
+                ) : (
+                    <KelasTable
+                        data={kelas}
+                        onEdit={openEdit}
+                        onDelete={deleteKelas}
+                    />
+                )}
               </div>
 
               {/* PAGINATION */}
@@ -141,9 +237,7 @@ export default function SiswaPage() {
                 <div className="flex items-center gap-2">
                   <button
                     disabled={meta.page <= 1}
-                    onClick={() =>
-                      setMeta((m) => ({ ...m, page: m.page - 1 }))
-                    }
+                    onClick={() => setMeta((m) => ({ ...m, page: m.page - 1 }))}
                     className="px-3 py-1.5 rounded-full border disabled:opacity-40"
                   >
                     Prev
@@ -151,9 +245,7 @@ export default function SiswaPage() {
 
                   <button
                     disabled={meta.page >= meta.totalPages}
-                    onClick={() =>
-                      setMeta((m) => ({ ...m, page: m.page + 1 }))
-                    }
+                    onClick={() => setMeta((m) => ({ ...m, page: m.page + 1 }))}
                     className="px-3 py-1.5 rounded-full border disabled:opacity-40"
                   >
                     Next
@@ -164,6 +256,25 @@ export default function SiswaPage() {
 
           </div>
         </div>
+
+        {/* MODAL */}
+        <KelasModal
+          open={isModalOpen}
+          onClose={() => setModalOpen(false)}
+          onSave={saveKelas}
+          loading={loading}
+          editing={!!editing}
+          nama_kelas={nama_kelas}
+          setNamaKelas={setNamaKelas}
+          deskripsi={deskripsi}
+          setDeskripsi={setDeskripsi}
+          id_Fakultas={id_Fakultas}
+          id_Mentor={id_Mentor}
+          setIdFakultas={setIdFakultas}
+          setIdMentor={setIdMentor}
+          fakultas={fakultas}
+          mentor={mentor}
+        />
       </div>
     </div>
   );

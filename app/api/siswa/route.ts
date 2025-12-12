@@ -24,10 +24,11 @@ type ProgressRow = {
     nama_lengkap: string;
     email: string;
   } | null;
-  Kelas: {
-    id_Kelas: number;
-    nama_kelas: string | null;
-  } | null;
+};
+
+type KelasRow = {
+  id_Kelas: number;
+  nama_kelas: string | null;
 };
 
 type UserRow = {
@@ -35,11 +36,6 @@ type UserRow = {
   nama_lengkap: string;
   email: string | null;
   created_at: string | null;
-};
-
-type KelasRow = {
-  id_Kelas: number;
-  nama_kelas: string | null;
 };
 
 function getStatus(lastUpdate: string | null | undefined): "aktif" | "tidak_aktif" {
@@ -141,19 +137,20 @@ export async function GET(req: Request) {
       });
     }
 
-    // 2) Ambil Progress untuk semua user/kelas yang muncul
-    const userIds = Array.from(
+    // 2) Ambil Kelas data
+    const kelasIds = Array.from(
       new Set(
         rawRows
-          .map((r) => r.User?.id_User)
+          .map((r) => r.id_Kelas)
           .filter((v): v is number => typeof v === "number")
       )
     );
 
-    const kelasIds = Array.from(
+    // 3) Ambil Progress untuk semua user/kelas yang muncul
+    const userIds = Array.from(
       new Set(
         rawRows
-          .map((r) => r.Kelas?.id_Kelas)
+          .map((r) => r.User?.id_User)
           .filter((v): v is number => typeof v === "number")
       )
     );
@@ -191,10 +188,12 @@ export async function GET(req: Request) {
       }
     }
 
-    // 3) Normalisasi rows + merge progress
+    // 4) Normalisasi rows + merge progress
     let rows = rawRows.map((row) => {
       const idUser = row.User?.id_User ?? null;
-      const idKelas = row.Kelas?.id_Kelas ?? null;
+      const idKelas = row.id_Kelas ?? null;
+      const key = `${idUser}-${idKelas ?? "null"}`;
+      const prog = idUser ? progressMap.get(key) : undefined;
 
       const lastUpdate = row.Last_update ?? null;
       const progressVal = row.Prsentase_Progress ?? 0;
@@ -216,7 +215,7 @@ export async function GET(req: Request) {
       };
     });
 
-    // 4) Filter search di JS (nama, email, nama_kelas)
+    // 5) Filter search di JS (nama, email, nama_kelas)
     if (search) {
       const s = search.toLowerCase();
       rows = rows.filter((r) =>
@@ -226,14 +225,14 @@ export async function GET(req: Request) {
       );
     }
 
-    // 5) Filter status di JS
+    // 6) Filter status di JS
     if (statusFilter === "aktif") {
       rows = rows.filter((r) => r.status === "aktif");
     } else if (statusFilter === "tidak_aktif") {
       rows = rows.filter((r) => r.status === "tidak_aktif");
     }
 
-    // 6) Hitung statistik dari rows yang sudah difilter
+    // 7) Hitung statistik dari rows yang sudah difilter
     // When search is used we filtered client-side; use the filtered length as total.
     const total = search ? rows.length : count ?? rows.length;
 
@@ -268,8 +267,9 @@ export async function GET(req: Request) {
         newRegistrations,
       },
     });
-  } catch (err: any) {
-    console.error("GET /api/siswa unexpected:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    console.error("GET /api/siswa unexpected:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

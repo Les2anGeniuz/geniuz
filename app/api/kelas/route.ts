@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { supabaseServer } from "@/lib/supabaseServer";
+// Pastikan path ini benar
+import { supabaseServer } from "@/lib/supabaseServer"; 
 
 //
-// FIX: Supabase JOIN proper LEFT JOIN style
+// Select statement untuk mengambil data Kelas beserta relasi
 //
 const SELECT_RELS = `
   id_Kelas,
@@ -23,13 +24,14 @@ const SELECT_RELS = `
 `;
 
 //
-// FIX: Normalizer untuk object, bukan array
+// Fungsi untuk menormalisasi hasil row dari Supabase menjadi format yang rapi
 //
 function normalizeRow(row: any) {
   return {
     id_Kelas: row.id_Kelas,
 
-    id_Fakultas: row.id_Fakultas,
+    // Tambahkan id_Fakultas dan id_Mentor untuk digunakan di form edit
+    id_Fakultas: row.id_Fakultas, 
     nama_fakultas: row.Fakultas?.nama_fakultas ?? null,
 
     id_Mentor: row.id_Mentor,
@@ -38,6 +40,7 @@ function normalizeRow(row: any) {
     nama_kelas: row.nama_kelas ?? "",
     deskripsi: row.deskripsi ?? "",
 
+    // Menghitung jumlah siswa yang terdaftar
     jumlah_siswa: Array.isArray(row.Pendaftaran)
       ? row.Pendaftaran.length
       : 0,
@@ -69,9 +72,7 @@ export async function GET(req: Request) {
       .order("id_Kelas", { ascending: false })
       .range(offset, offset + limit - 1);
 
-    //
-    // FIX: Only table columns in OR search
-    //
+    // Filter Supabase hanya pada kolom tabel utama (nama_kelas, deskripsi)
     if (search) {
       const safe = search.replace(/[%()]/g, "");
       query = query.or(
@@ -91,9 +92,7 @@ export async function GET(req: Request) {
 
     let rows = (data ?? []).map(normalizeRow);
 
-    //
-    // FIX: Additional search for Fakultas / Mentor
-    //
+    // Filtering tambahan di sisi server Next.js (untuk nama fakultas/mentor)
     if (search) {
       const s = search.toLowerCase();
       rows = rows.filter((r) =>
@@ -103,14 +102,19 @@ export async function GET(req: Request) {
         r.nama_mentor?.toLowerCase().includes(s)
       );
     }
+    
+    // Perhitungan total pages harus berdasarkan total data (count) dari Supabase
+    // agar pagination berjalan benar, terutama jika ada filter/search di Supabase
+    const totalData = count ?? rows.length;
+    const totalPages = Math.max(1, Math.ceil(totalData / limit));
 
     return NextResponse.json({
       data: rows,
       meta: {
         page,
-        total: count ?? rows.length,
+        total: totalData,
         limit,
-        totalPages: Math.max(1, Math.ceil((count ?? rows.length) / limit)),
+        totalPages,
       },
     });
   } catch (err: any) {
@@ -152,6 +156,72 @@ export async function POST(req: Request) {
     return NextResponse.json({ data: normalizeRow(data) }, { status: 201 });
   } catch (err: any) {
     console.error("POST /api/kelas unexpected:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  const adminId = (await cookies()).get("admin_id")?.value;
+
+  if (!adminId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const id = params.id;
+    const body = await req.json();
+    const { nama_kelas, id_Fakultas, id_Mentor = null, deskripsi = null } =
+      body;
+
+    if (!nama_kelas || !id_Fakultas)
+      return NextResponse.json(
+        { error: "nama_kelas & id_Fakultas required" },
+        { status: 400 }
+      );
+
+    const supabase = supabaseServer();
+
+    const { data, error } = await supabase
+      .from("Kelas")
+      .update({ nama_kelas, id_Fakultas, id_Mentor, deskripsi })
+      .eq("id_Kelas", id)
+      .select(SELECT_RELS)
+      .single();
+
+    if (error) {
+      console.error(`PUT /api/kelas/${id} error:`, error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ data: normalizeRow(data) });
+  } catch (err: any) {
+    console.error("PUT /api/kelas unexpected:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  const adminId = (await cookies()).get("admin_id")?.value;
+
+  if (!adminId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const id = params.id;
+    const supabase = supabaseServer();
+
+    const { error } = await supabase
+      .from("Kelas")
+      .delete()
+      .eq("id_Kelas", id);
+
+    if (error) {
+      console.error(`DELETE /api/kelas/${id} error:`, error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: "Kelas deleted successfully" });
+  } catch (err: any) {
+    console.error("DELETE /api/kelas unexpected:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

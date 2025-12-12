@@ -253,3 +253,205 @@ export const getDashboardActivity = async (req, res) => {
     return res.status(500).json({ error: e?.message || 'Internal server error' })
   }
 }
+
+export const getDashboardAchievement = async (req, res) => {
+  try {
+    const userId = req.user?.id_User
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' })
+
+    const { data: submissions, error } = await supabaseAdmin
+      .from('Pengumpulan_Tugas')
+      .select('id_Pengumpulan')
+      .eq('id_User', userId)
+
+    if (error) return res.status(500).json({ error: error.message })
+
+    const totalSubmit = (submissions || []).length
+
+    const build = (target) => {
+      const progress = target === 0 ? 0 : Math.min(100, Math.round((totalSubmit / target) * 100))
+      return { target, label: `Selesaikan ${target} Tugas!`, progress }
+    }
+
+    return res.status(200).json({
+      total_submit: totalSubmit,
+      achievements: [build(50), build(25), build(10)]
+    })
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || 'Internal server error' })
+  }
+}
+
+export const getDashboardStatistik = async (req, res) => {
+  try {
+    const userId = req.user?.id_User
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' })
+
+    const { data: pendaftarans, error: daftarError } = await supabaseAdmin
+      .from('Pendaftaran')
+      .select('id_Kelas')
+      .eq('id_User', userId)
+
+    if (daftarError) return res.status(500).json({ error: daftarError.message })
+
+    const kelasIds = [...new Set((pendaftarans || []).map(p => p.id_Kelas).filter(Boolean))]
+    if (!kelasIds.length) {
+      return res.status(200).json({
+        total_tugas: 0,
+        tugas_selesai: 0,
+        tugas_belum: 0
+      })
+    }
+
+    const { data: tugasRows, error: tugasError } = await supabaseAdmin
+      .from('Tugas')
+      .select('id_Tugas')
+      .in('id_Kelas', kelasIds)
+
+    if (tugasError) return res.status(500).json({ error: tugasError.message })
+
+    const totalTugas = (tugasRows || []).length
+
+    if (!totalTugas) {
+      return res.status(200).json({
+        total_tugas: 0,
+        tugas_selesai: 0,
+        tugas_belum: 0
+      })
+    }
+
+    const tugasIds = tugasRows.map(t => t.id_Tugas)
+
+    const { data: subs, error: subError } = await supabaseAdmin
+      .from('Pengumpulan_Tugas')
+      .select('id_Tugas')
+      .eq('id_User', userId)
+      .in('id_Tugas', tugasIds)
+
+    if (subError) return res.status(500).json({ error: subError.message })
+
+    const selesaiSet = new Set((subs || []).map(s => s.id_Tugas))
+    const tugasSelesai = selesaiSet.size
+    const tugasBelum = Math.max(0, totalTugas - tugasSelesai)
+
+    return res.status(200).json({
+      total_tugas: totalTugas,
+      tugas_selesai: tugasSelesai,
+      tugas_belum: tugasBelum
+    })
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || 'Internal server error' })
+  }
+}
+
+export const getDashboardKelasSaya = async (req, res) => {
+  try {
+    const userId = req.user?.id_User
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' })
+
+    const { data: pendaftarans, error: daftarError } = await supabaseAdmin
+      .from('Pendaftaran')
+      .select('id_Pendaftaran, id_Kelas, status_pendaftaran, tanggal_pendaftaran')
+      .eq('id_User', userId)
+      .order('tanggal_pendaftaran', { ascending: false })
+
+    if (daftarError) return res.status(500).json({ error: daftarError.message })
+
+    const kelasIds = [...new Set((pendaftarans || []).map(p => p.id_Kelas).filter(Boolean))]
+    if (!kelasIds.length) return res.status(200).json({ kelas_saya: [] })
+
+    const { data: kelasRows, error: kelasError } = await supabaseAdmin
+      .from('Kelas')
+      .select('id_Kelas, id_Fakultas, id_Mentor, nama_kelas, deskripsi')
+      .in('id_Kelas', kelasIds)
+
+    if (kelasError) return res.status(500).json({ error: kelasError.message })
+
+    const fakultasIds = [...new Set((kelasRows || []).map(k => k.id_Fakultas).filter(Boolean))]
+    const mentorIds = [...new Set((kelasRows || []).map(k => k.id_Mentor).filter(Boolean))]
+
+    const { data: fakultasRows, error: fakultasError } = await supabaseAdmin
+      .from('Fakultas')
+      .select('id_Fakultas, nama_fakultas')
+      .in('id_Fakultas', fakultasIds)
+
+    if (fakultasError) return res.status(500).json({ error: fakultasError.message })
+
+    const { data: mentorRows, error: mentorError } = await supabaseAdmin
+      .from('Mentor')
+      .select('id_Mentor, nama_mentor, status')
+      .in('id_Mentor', mentorIds)
+
+    if (mentorError) return res.status(500).json({ error: mentorError.message })
+
+    const kelasMap = new Map()
+    ;(kelasRows || []).forEach(k => kelasMap.set(k.id_Kelas, k))
+
+    const fakultasMap = new Map()
+    ;(fakultasRows || []).forEach(f => fakultasMap.set(f.id_Fakultas, f))
+
+    const mentorMap = new Map()
+    ;(mentorRows || []).forEach(m => mentorMap.set(m.id_Mentor, m))
+
+    const result = (pendaftarans || [])
+      .filter(p => p.id_Kelas)
+      .map(p => {
+        const kelas = kelasMap.get(p.id_Kelas) || null
+        const fakultas = kelas?.id_Fakultas ? fakultasMap.get(kelas.id_Fakultas) || null : null
+        const mentor = kelas?.id_Mentor ? mentorMap.get(kelas.id_Mentor) || null : null
+        return {
+          id_Pendaftaran: p.id_Pendaftaran,
+          status_pendaftaran: p.status_pendaftaran,
+          tanggal_pendaftaran: p.tanggal_pendaftaran,
+          kelas,
+          fakultas,
+          mentor
+        }
+      })
+
+    return res.status(200).json({ kelas_saya: result })
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || 'Internal server error' })
+  }
+}
+
+export const getDashboardKelas = async (req, res) => {
+  try {
+    const userId = req.user?.id_User
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' })
+
+    const { data: pendaftarans, error: daftarError } = await supabaseAdmin
+      .from('Pendaftaran')
+      .select('id_Pendaftaran, id_Kelas, status_pendaftaran, tanggal_pendaftaran')
+      .eq('id_User', userId)
+      .order('tanggal_pendaftaran', { ascending: false })
+
+    if (daftarError) return res.status(500).json({ error: daftarError.message })
+
+    const kelasIds = [...new Set((pendaftarans || []).map(p => p.id_Kelas).filter(Boolean))]
+    if (!kelasIds.length) return res.status(200).json({ kelas: [] })
+
+    const { data: kelasRows, error: kelasError } = await supabaseAdmin
+      .from('Kelas')
+      .select('id_Kelas, id_Fakultas, id_Mentor, nama_kelas, deskripsi')
+      .in('id_Kelas', kelasIds)
+
+    if (kelasError) return res.status(500).json({ error: kelasError.message })
+
+    const kelasMap = new Map()
+    ;(kelasRows || []).forEach(k => kelasMap.set(k.id_Kelas, k))
+
+    const result = (pendaftarans || [])
+      .filter(p => p.id_Kelas)
+      .map(p => ({
+        id_Pendaftaran: p.id_Pendaftaran,
+        status_pendaftaran: p.status_pendaftaran,
+        tanggal_pendaftaran: p.tanggal_pendaftaran,
+        kelas: kelasMap.get(p.id_Kelas) || null
+      }))
+
+    return res.status(200).json({ kelas: result })
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || 'Internal server error' })
+  }
+}

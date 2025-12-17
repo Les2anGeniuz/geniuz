@@ -4,146 +4,133 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 
 const Overview: React.FC = () => {
+  // State untuk data user
   const [userData, setUserData] = useState<any>(null);
+  
+  // State untuk statistik
   const [statistics, setStatistics] = useState({
     totalClasses: 0,
     completedTasks: 0,
     progress: 0,
   });
-  const [faculty, setFaculty] = useState<string>(""); 
+
+  // State pendukung
+  const [faculty, setFaculty] = useState<string>("-"); 
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Try using server API which validates the token and returns profile+stats
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token ?? null;
-        console.debug("overview: sessionData:", sessionData);
-        console.debug("overview: token:", token);
+        setLoading(true);
 
-        if (token) {
-          try {
-            const res = await fetch(`/api/me`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            console.debug("overview: /api/me status:", res.status);
-
-            if (res.ok) {
-              const json = await res.json();
-              // json: { user, profile, stats }
-              setUserData(json.profile ?? null);
-              const s = json.stats ?? null;
-              if (s) {
-                setStatistics({
-                  totalClasses: s.total_classes || 0,
-                  completedTasks: s.completed_tasks || 0,
-                  progress: s.progress || 0,
-                });
-              }
-              // fetch faculty name if available
-              if (json.profile?.id_Fakultas) await fetchFacultyName(String(json.profile.id_Fakultas));
-              else setFaculty("-");
-              return; // done
-            } else {
-              let text = null;
-              try { text = await res.text(); } catch (e) { /* ignore */ }
-              console.warn(`/api/me returned ${res.status}`, text);
-            }
-          } catch (e) {
-            console.warn("/api/me call failed:", e);
-          }
+        // 1. Cek User yang sedang login (Auth)
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          console.warn("User belum login.");
+          setLoading(false);
+          return;
         }
 
-        // Fallback: query Supabase directly from client
-        const { data } = await supabase.auth.getUser();
-        const user = data?.user ?? null;
-        if (!user) return;
+        const userEmail = session.user.email;
+        const token = session.access_token;
 
-        console.debug("overview: user (fallback):", { id: user.id, email: user.email });
+        // 2. Coba ambil data dari API (/api/me)
+        let profileFound = null;
+        let statsFound = null;
 
-        let userRow: any = null;
         try {
-          const { data: byEmail, error: errEmail } = await supabase
-            .from("User")
-            .select("nama_lengkap, id_Fakultas, id_Kelas")
-            .eq("email", user.email)
-            .single();
-          if (errEmail) console.debug("overview: user by email error:", errEmail);
-          userRow = byEmail ?? null;
+          const res = await fetch(`/api/me`, {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+            },
+          });
 
-          if (!userRow) {
-            // try by id_User (some tables use id_User)
-            const { data: byId, error: errId } = await supabase
-              .from("User")
-              .select("id_User, nama_lengkap, id_Fakultas, id_Kelas")
-              .eq("id_User", user.id)
-              .single();
-            if (errId) console.debug("overview: user by id_User error:", errId);
-            userRow = byId ?? userRow;
+          if (res.ok) {
+            const json = await res.json();
+            profileFound = json.profile;
+            statsFound = json.stats;
+          } else {
+            console.warn("API Error (Mungkin beda nama kolom), mencoba Fallback ke Client...");
           }
-
-          console.debug("overview: resolved userRow:", userRow);
-        } catch (e) {
-          console.error("overview: error resolving userRow", e);
+        } catch (apiErr) {
+          console.error("Gagal fetch API, lanjut ke Fallback...", apiErr);
         }
 
-        if (userRow) {
-          setUserData(userRow);
-          if (userRow.id_Fakultas) await fetchFacultyName(String(userRow.id_Fakultas));
-          else setFaculty("-");
+        // 3. LOGIKA FALLBACK (Penting jika API masih error)
+        // Jika API gagal atau tidak mengembalikan profile, kita ambil langsung dari tabel 'User'
+        if (!profileFound && userEmail) {
+          const { data: directProfile, error: directErr } = await supabase
+            .from("User") // Pastikan nama tabel sesuai Case Sensitive
+            .select("nama_lengkap, id_User") // Kita ambil kolom yang PASTI ADA di screenshot kamu
+            .eq("email", userEmail)
+            .maybeSingle();
+
+          if (directErr) {
+            console.error("Fallback error:", directErr);
+          } else {
+            profileFound = directProfile;
+          }
         }
 
-        const { data: stats, error: statsErr } = await supabase
-          .from("statistics")
-          .select("total_classes, completed_tasks, progress")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        // 4. Update State Profile
+        if (profileFound) {
+          setUserData(profileFound);
+          
+          // Cek fakultas (jika ada kolom id_Fakultas nanti)
+          // Menggunakan optional chaining (?.) agar tidak error jika kolom tidak ada
+          const idFakultas = profileFound.id_Fakultas || profileFound.faculty_id;
+          if (idFakultas) {
+            fetchFacultyName(String(idFakultas));
+          }
+        }
 
-        if (statsErr) console.error("Error fetching stats:", statsErr);
-        if (stats) {
+        // 5. Update State Statistics (Ambil dari API atau default 0)
+        if (statsFound) {
           setStatistics({
-            totalClasses: stats.total_classes || 0,
-            completedTasks: stats.completed_tasks || 0,
-            progress: stats.progress || 0,
+            totalClasses: statsFound.total_classes || 0,
+            completedTasks: statsFound.completed_tasks || 0,
+            progress: statsFound.progress || 0,
           });
         }
+
       } catch (error) {
-        console.error("Error:", error);
+        console.error("Critical Error di Overview:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    // The backend route is app/api/fakultas; fetch all and find the matching id.
+    // Helper: Ambil nama fakultas
     const fetchFacultyName = async (facultyId: string) => {
       try {
         const res = await fetch(`/api/fakultas`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) return;
         const json = await res.json();
         const list: any[] = json?.data ?? [];
         const found = list.find((f) => String(f.id_Fakultas) === String(facultyId));
         setFaculty(found?.nama_fakultas || "-");
-      } catch (e) {
-        console.error("Error fetching fakultas:", e);
-        setFaculty("-");
+      } catch (e) { 
+        /* Silent error */ 
       }
     };
 
     fetchData();
   }, []);
 
-  if (loading) return <div className="text-gray-400">Sedang memuat data...</div>;
+  if (loading) return <div className="p-6 text-gray-400">Sedang memuat data...</div>;
 
-  const name = userData?.nama_lengkap || "-";
+  // Data Tampilan
+  const displayName = userData?.nama_lengkap || "Mahasiswa";
+  // Gunakan gambar default karena di tabel User kamu belum ada kolom 'profile_picture'
   const profilePicture = "/default-profile.png"; 
 
   return (
-    // PENTING: Container luar tanpa padding, tapi isinya tetap w-[600px]
     <div className="w-full"> 
       <h1 className="text-3xl font-semibold text-black mb-3">Overview</h1>
 
-      {/* Bagian Profil TETAP w-[600px] */}
+      {/* Bagian Profil */}
       <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-6 mb-6 flex flex-col md:flex-row items-center gap-3 shadow-sm">
         <div className="flex-shrink-0">
           <img
@@ -156,7 +143,7 @@ const Overview: React.FC = () => {
         <div className="flex-grow text-center md:text-left">
           <h2 className="text-3xl font-bold text-[#09090b] mb-1 leading-tight">
             Semangat Belajar, <br className="hidden md:block"/>
-            {userData?.nama_lengkap || "-"}!
+            {displayName}!
           </h2>
           <p className="text-blue-500 font-bold text-base cursor-pointer hover:underline">
             {faculty}
@@ -164,14 +151,14 @@ const Overview: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid Statistik TETAP w-[600px] dan Flex layout */}
+      {/* Grid Statistik */}
       <div className="flex justify-between w-[600px] gap-6 mx-auto">
-
-        {/* Kartu Total Kelas */}
+        
+        {/* Total Kelas */}
         <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="text-gray-700">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
             </div>
             <span className="text-gray-500 font-medium text-sm">Total Kelas</span>
           </div>
@@ -180,7 +167,7 @@ const Overview: React.FC = () => {
           </div>
         </div>
 
-        {/* Kartu Tugas Selesai */}
+        {/* Tugas Selesai */}
         <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="text-gray-700">
@@ -193,19 +180,19 @@ const Overview: React.FC = () => {
           </div>
         </div>
 
-        {/* Kartu Progres Belajar */}
+        {/* Progres Belajar */}
         <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="text-gray-700">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
             </div>
-            <span className="text-gray-500 font-medium text-sm">Progres Belajar</span>
+            <span className="text-gray-500 font-medium text-sm">Progres</span>
           </div>
           <div className="flex items-center justify-center gap-2 mt-auto">
-            <span className="text-2xl font-bold text-[#09090b]">{statistics.progress}%</span>
+            <span className="text-2xl font-bold text-[#09090b]">{Math.round(statistics.progress)}%</span>
           </div>
         </div>
-        
+
       </div>
     </div>
   );

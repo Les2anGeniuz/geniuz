@@ -16,24 +16,81 @@ const Overview: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data } = await supabase.auth.getUser();
-        const user = data?.user ?? null;
+        // Try using server API which validates the token and returns profile+stats
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token ?? null;
+        console.debug("overview: sessionData:", sessionData);
+        console.debug("overview: token:", token);
 
-        if (!user) {
-          setLoading(false);
-          return;
+        if (token) {
+          try {
+            const res = await fetch(`/api/me`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            console.debug("overview: /api/me status:", res.status);
+
+            if (res.ok) {
+              const json = await res.json();
+              // json: { user, profile, stats }
+              setUserData(json.profile ?? null);
+              const s = json.stats ?? null;
+              if (s) {
+                setStatistics({
+                  totalClasses: s.total_classes || 0,
+                  completedTasks: s.completed_tasks || 0,
+                  progress: s.progress || 0,
+                });
+              }
+              // fetch faculty name if available
+              if (json.profile?.id_Fakultas) await fetchFacultyName(String(json.profile.id_Fakultas));
+              else setFaculty("-");
+              return; // done
+            } else {
+              let text = null;
+              try { text = await res.text(); } catch (e) { /* ignore */ }
+              console.warn(`/api/me returned ${res.status}`, text);
+            }
+          } catch (e) {
+            console.warn("/api/me call failed:", e);
+          }
         }
 
-        const { data: userRow, error: userErr } = await supabase
-          .from("User")
-          .select("nama_lengkap, university, faculty_id, class_id")
-          .eq("email", user.email)
-          .single();
+        // Fallback: query Supabase directly from client
+        const { data } = await supabase.auth.getUser();
+        const user = data?.user ?? null;
+        if (!user) return;
 
-        if (userErr) console.error("Error fetching user row:", userErr);
+        console.debug("overview: user (fallback):", { id: user.id, email: user.email });
+
+        let userRow: any = null;
+        try {
+          const { data: byEmail, error: errEmail } = await supabase
+            .from("User")
+            .select("nama_lengkap, id_Fakultas, id_Kelas")
+            .eq("email", user.email)
+            .single();
+          if (errEmail) console.debug("overview: user by email error:", errEmail);
+          userRow = byEmail ?? null;
+
+          if (!userRow) {
+            // try by id_User (some tables use id_User)
+            const { data: byId, error: errId } = await supabase
+              .from("User")
+              .select("id_User, nama_lengkap, id_Fakultas, id_Kelas")
+              .eq("id_User", user.id)
+              .single();
+            if (errId) console.debug("overview: user by id_User error:", errId);
+            userRow = byId ?? userRow;
+          }
+
+          console.debug("overview: resolved userRow:", userRow);
+        } catch (e) {
+          console.error("overview: error resolving userRow", e);
+        }
+
         if (userRow) {
           setUserData(userRow);
-          if (userRow.faculty_id) await fetchFacultyName(String(userRow.faculty_id));
+          if (userRow.id_Fakultas) await fetchFacultyName(String(userRow.id_Fakultas));
           else setFaculty("-");
         }
 
@@ -79,7 +136,6 @@ const Overview: React.FC = () => {
   if (loading) return <div className="text-gray-400">Sedang memuat data...</div>;
 
   const name = userData?.nama_lengkap || "-";
-  const university = userData?.university || "-"; 
   const profilePicture = "/default-profile.png"; 
 
   return (
@@ -100,9 +156,8 @@ const Overview: React.FC = () => {
         <div className="flex-grow text-center md:text-left">
           <h2 className="text-3xl font-bold text-[#09090b] mb-1 leading-tight">
             Semangat Belajar, <br className="hidden md:block"/>
-            {name}!
+            {userData?.nama_lengkap || "-"}!
           </h2>
-          <p className="text-gray-600 text-lg mb-1 font-medium">{university}</p>
           <p className="text-blue-500 font-bold text-base cursor-pointer hover:underline">
             {faculty}
           </p>

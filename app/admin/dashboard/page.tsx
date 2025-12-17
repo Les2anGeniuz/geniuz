@@ -1,9 +1,7 @@
 import SidebarAdmin from "../../components/layouts/sidebarAdmin";
 import Navbar from "../../components/layouts/navbarAdmin";
 import DashboardStats from "../../components/dashboards/stats";
-import DashboardClasses from "../../components/dashboards/classes";
 import DashboardActivities from "../../components/dashboards/activities";
-
 
 export default function AdminDashboard() {
   return (

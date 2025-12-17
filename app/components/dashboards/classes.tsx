@@ -11,7 +11,7 @@ interface Kelas {
   nama_mentor: string | null;
 }
 
-export default function KelasDashboardTable() {
+export default function DashboardClasses() {
   const [data, setData] = useState<Kelas[]>([]);
   const [loading, setLoading] = useState(true);
 

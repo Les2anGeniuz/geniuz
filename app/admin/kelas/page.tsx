@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import SidebarAdmin from "../../components/layouts/sidebarAdmin";
 import Navbar from "../../components/layouts/navbarAdmin";
 
@@ -16,6 +16,16 @@ interface Kelas {
   nama_mentor: string | null;
 }
 
+interface Fakultas {
+  id_Fakultas: number;
+  nama_fakultas: string;
+}
+
+interface Mentor {
+  id_Mentor: number;
+  nama_mentor: string;
+}
+
 export default function KelasPage() {
   const [kelas, setKelas] = useState<Kelas[]>([]);
   const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1, limit: 15 });
@@ -29,13 +39,13 @@ export default function KelasPage() {
   const [id_Fakultas, setIdFakultas] = useState("");
   const [id_Mentor, setIdMentor] = useState("");
 
-  const [fakultas, setFakultas] = useState<any[]>([]);
-  const [mentor, setMentor] = useState<any[]>([]);
+  const [fakultas, setFakultas] = useState<Fakultas[]>([]);
+  const [mentor, setMentor] = useState<Mentor[]>([]);
   const [loading, setLoading] = useState(false);
 
   const page = meta.page;
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: "15" });
     if (search) params.set("search", search);
 
@@ -46,7 +56,7 @@ export default function KelasPage() {
       setKelas(json.data);
       setMeta(json.meta);
     }
-  };
+  }, [page, search]);
 
   const loadFakultas = async () => {
     const res = await fetch("/api/fakultas");
@@ -62,7 +72,7 @@ export default function KelasPage() {
 
   useEffect(() => {
     fetchData();
-  }, [search, page]);
+  }, [search, page, fetchData]);
 
   const openAdd = () => {
     setEditing(null);

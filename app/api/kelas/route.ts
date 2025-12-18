@@ -20,7 +20,7 @@ const SELECT_RELS = `
     id_Mentor,
     nama_mentor
   ),
-  Pendaftaran(id_Pendaftaran)
+  Pengumpulan_Tugas(id_Pengumpulan)
 `;
 
 //

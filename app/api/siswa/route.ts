@@ -2,26 +2,23 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabaseServer";
 
-const SELECT_RELS = `
-  id_Pendaftaran,
-  tanggal_pendaftaran,
-  status_pendaftaran,
-  id_Kelas,
+// Schema update: Pendaftaran no longer relates to Kelas.
+// We derive student activity/status from Progress and enrich with User/Kelas data.
+// Query Progress without nested User relation
+const SELECT_PROGRESS = `
+  id_Progress,
   id_User,
-
-  User: id_User (
-    id_User,
-    nama_lengkap,
-    email
-  )
+  id_Kelas,
+  Last_update,
+  Prsentase_Progress
 `;
 
-type RawRow = {
-  id_Pendaftaran: number;
-  tanggal_pendaftaran: string | null;
-  status_pendaftaran: string | null;
+type ProgressRow = {
+  id_Progress: number;
+  id_User: number;
   id_Kelas: number | null;
-  id_User: number | null;
+  Last_update: string | null;
+  Prsentase_Progress: number | null;
   User: {
     id_User: number;
     nama_lengkap: string;
@@ -34,12 +31,11 @@ type KelasRow = {
   nama_kelas: string | null;
 };
 
-type ProgressRow = {
-  id_Progress: number;
+type UserRow = {
   id_User: number;
-  id_Kelas: number | null;
-  Last_update: string | null;
-  Prsentase_Progress: number | null;
+  nama_lengkap: string;
+  email: string | null;
+  created_at: string | null;
 };
 
 function getStatus(lastUpdate: string | null | undefined): "aktif" | "tidak_aktif" {
@@ -66,13 +62,12 @@ export async function GET(req: Request) {
     const search = url.searchParams.get("search")?.trim() || "";
     const statusFilter = url.searchParams.get("status"); // aktif | tidak_aktif | null
 
-    // 1) Ambil Pendaftaran + relasi User & Kelas
-    // If a search query exists, fetch a larger bounded set and filter in JS
-    // (avoids constructing fragile PostgREST relation filters client-side).
+    // 1) Ambil Progress rows (as source of activity per user-kelas)
+    // We will enrich with User and Kelas in separate queries to avoid invalid relations.
     let query = supabase
-      .from("Pendaftaran")
-      .select(SELECT_RELS, { count: "exact" })
-      .order("tanggal_pendaftaran", { ascending: false });
+      .from("Progress")
+      .select(SELECT_PROGRESS, { count: "exact" })
+      .order("Last_update", { ascending: false });
 
     if (search) {
       // fetch a bounded superset to search within (trade-off: not ideal for huge datasets)
@@ -88,22 +83,56 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const rawRows: RawRow[] = (data as unknown as RawRow[]) ?? [];
+    const rawRows: ProgressRow[] = (data as unknown as ProgressRow[]) ?? [];
 
+    // Jika belum ada Progress sama sekali, tampilkan daftar User dasar sebagai fallback
     if (!rawRows.length) {
+      const userQuery = supabase
+        .from("User")
+        .select("id_User,nama_lengkap,email,created_at", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      const { data: users, error: userErr, count: userCount } = await userQuery;
+      if (userErr) {
+        console.error("GET /api/siswa fallback users error:", userErr);
+        return NextResponse.json({ error: userErr.message }, { status: 500 });
+      }
+
+      const rows = (users as UserRow[]).map((u) => ({
+        id_user: u.id_User,
+        nama_lengkap: u.nama_lengkap,
+        email: u.email ?? "",
+        id_kelas: null,
+        nama_kelas: null,
+        tanggal_masuk: u.created_at,
+        terakhir_aktif: null,
+        progress: 0,
+        status: "tidak_aktif" as const,
+      }));
+
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+
+      const newRegistrations = rows.filter((r) => {
+        if (!r.tanggal_masuk) return false;
+        return new Date(r.tanggal_masuk) >= monthStart;
+      }).length;
+
       return NextResponse.json({
-        data: [],
+        data: rows,
         meta: {
-          total: count ?? 0,
+          total: userCount ?? rows.length,
           page,
           limit,
-          totalPages: Math.max(1, Math.ceil((count ?? 0) / limit)),
+          totalPages: Math.max(1, Math.ceil((userCount ?? rows.length) / limit)),
         },
         stats: {
-          total: 0,
+          total: userCount ?? rows.length,
           aktif: 0,
           avgProgress: 0,
-          newRegistrations: 0,
+          newRegistrations,
         },
       });
     }
@@ -117,20 +146,6 @@ export async function GET(req: Request) {
       )
     );
 
-    const kelasMap = new Map<number, KelasRow>();
-    if (kelasIds.length) {
-      const { data: kelasData } = await supabase
-        .from("Kelas")
-        .select("id_Kelas, nama_kelas")
-        .in("id_Kelas", kelasIds);
-
-      if (kelasData) {
-        (kelasData as KelasRow[]).forEach((k) => {
-          kelasMap.set(k.id_Kelas, k);
-        });
-      }
-    }
-
     // 3) Ambil Progress untuk semua user/kelas yang muncul
     const userIds = Array.from(
       new Set(
@@ -140,21 +155,35 @@ export async function GET(req: Request) {
       )
     );
 
-    const progressMap = new Map<string, ProgressRow>();
+    const userMap = new Map<number, UserRow>();
+    const kelasMap = new Map<number, KelasRow>();
 
-    if (userIds.length && kelasIds.length) {
-      const { data: progressData, error: progressError } = await supabase
-        .from("Progress")
-        .select("id_Progress,id_User,id_Kelas,Last_update,Prsentase_Progress")
-        .in("id_User", userIds)
+    if (userIds.length) {
+      const { data: userData, error: userError } = await supabase
+        .from("User")
+        .select("id_User,nama_lengkap,email,created_at")
+        .in("id_User", userIds);
+
+      if (userError) {
+        console.error("GET /api/siswa user error:", userError);
+      } else {
+        (userData as UserRow[]).forEach((u) => {
+          userMap.set(u.id_User, u);
+        });
+      }
+    }
+
+    if (kelasIds.length) {
+      const { data: kelasData, error: kelasError } = await supabase
+        .from("Kelas")
+        .select("id_Kelas,nama_kelas")
         .in("id_Kelas", kelasIds);
 
-      if (progressError) {
-        console.error("GET /api/siswa progress error:", progressError);
+      if (kelasError) {
+        console.error("GET /api/siswa kelas error:", kelasError);
       } else {
-        (progressData as ProgressRow[]).forEach((p) => {
-          const key = `${p.id_User}-${p.id_Kelas ?? "null"}`;
-          progressMap.set(key, p);
+        (kelasData as KelasRow[]).forEach((k) => {
+          kelasMap.set(k.id_Kelas, k);
         });
       }
     }
@@ -163,22 +192,20 @@ export async function GET(req: Request) {
     let rows = rawRows.map((row) => {
       const idUser = row.User?.id_User ?? null;
       const idKelas = row.id_Kelas ?? null;
-      const key = `${idUser}-${idKelas ?? "null"}`;
-      const prog = idUser ? progressMap.get(key) : undefined;
-
-      const lastUpdate = prog?.Last_update ?? null;
-      const progressVal = prog?.Prsentase_Progress ?? 0;
+      const lastUpdate = row.Last_update ?? null;
+      const progressVal = row.Prsentase_Progress ?? 0;
       const status = getStatus(lastUpdate);
 
-      const kelasData = idKelas ? kelasMap.get(idKelas) : null;
+      const user = idUser ? userMap.get(idUser) : undefined;
+      const kelas = idKelas ? kelasMap.get(idKelas) : undefined;
 
       return {
         id_user: idUser,
-        nama_lengkap: row.User?.nama_lengkap ?? "",
-        email: row.User?.email ?? "",
+        nama_lengkap: user?.nama_lengkap ?? "",
+        email: user?.email ?? "",
         id_kelas: idKelas,
-        nama_kelas: kelasData?.nama_kelas ?? null,
-        tanggal_masuk: row.tanggal_pendaftaran ?? null,
+        nama_kelas: kelas?.nama_kelas ?? null,
+        tanggal_masuk: user?.created_at ?? null,
         terakhir_aktif: lastUpdate,
         progress: progressVal,
         status,

@@ -1,23 +1,19 @@
 // Lokasi file ini: app/kelas/[idKelas]/page.tsx
 
-// 1. Ambil "cetakan" dari file komponenmu
-import Sidebar from '../../components/Kelas2/sidebar';
-import MateriCard from '../../components/Kelas2/Materi';
-import TugasCard from  '../../components/Kelas2/Tugas';
-import { Search, Bell, ChevronDown } from 'lucide-react';
+import { notFound } from 'next/navigation';
 import Image from 'next/image';
+import { Search, Bell, ChevronDown } from 'lucide-react';
 
-// Perbaikan Import:
-// Karena file sumber mengekspor objek Supabase yang sudah jadi (dengan nama 'supabase'), 
-// kita harus menggunakannya secara langsung.
-// Menggunakan alias 'supabaseClient' agar jelas ini adalah objek client, bukan fungsi.
+// 1. Import Komponen UI
+import Sidebar from '../../components/Kelas2/sidebar';
+import MateriCard, { MateriCardProps } from '../../components/Kelas2/Materi';
+import TugasCard, { TugasCardProps } from '../../components/Kelas2/Tugas';
+
+// 2. Import Supabase Client
+// Menggunakan alias 'supabaseClient' sesuai permintaan Anda
 import { supabase as supabaseClient } from '../../lib/supabaseClient';
 
-// 3. Impor "Kontrak" Data
-import { MateriCardProps } from '../../components/Kelas2/Materi';
-import { TugasCardProps } from '../../components/Kelas2/Tugas';
-
-import { notFound } from 'next/navigation'; // Diperlukan untuk validasi
+// --- DEFINISI TIPE DATA ---
 
 interface HalamanKelasDinamisProps {
   params: {
@@ -25,7 +21,8 @@ interface HalamanKelasDinamisProps {
   };
 }
 
-interface MateriItem {
+// Tipe data mentah dari Database (Supabase)
+interface MateriItemDB {
   id_Materi: number;
   judul_materi: string;
   deskripsi?: string;
@@ -36,110 +33,124 @@ interface MateriItem {
   urutan?: number;
 }
 
-interface TugasItem {
+interface TugasItemDB {
   id_Tugas: number;
   judul_tugas: string;
   tenggat_waktu: string;
   status: string;
 }
 
-interface KelasData {
+interface KelasDataDB {
   id_Kelas: number;
   nama_kelas: string;
-  Materi: MateriItem[];
-  Tugas: TugasItem[];
+  Materi: MateriItemDB[]; // Relasi
+  Tugas: TugasItemDB[];   // Relasi
 }
 
-// 4. Ini adalah Halaman Dinamis kamu
-export default async function HalamanKelasDinamis(props: HalamanKelasDinamisProps) {
-  const { idKelas } = props.params;
-  const id = Number(idKelas); 
+// --- KOMPONEN UTAMA ---
 
-  // --- 1. VALIDASI ID ---
+export default async function HalamanKelasDinamis({ params }: HalamanKelasDinamisProps) {
+  // 1. Ambil ID dari params
+  const { idKelas } = params;
+  const id = Number(idKelas);
+
+  // Validasi: Jika ID bukan angka, return 404
   if (isNaN(id)) {
-    // Menggunakan notFound() dari Next.js untuk ID yang tidak valid
     notFound();
   }
-  
-  // --- 2. PANGGIL SUPABASE & AMBIL DATA (FINAL FIX) ---
-  // const supabase = await createSupabaseServerClient(); <-- BARIS INI DIHAPUS
 
-  // 💡 PERBAIKAN: Langsung gunakan objek 'supabaseClient' yang diimpor
-  //               (alias dari 'supabase') untuk query.
-const { data: kelasArray, error } = await supabaseClient 
-    .from('Kelas') // Gunakan nama alias 'supabaseClient'
-    .select('id_Kelas, nama_kelas, Materi(id_Materi, judul_materi, deskripsi, tipe_konten, link_konten, Tanggal_tayang, thumbnail_url, urutan), Tugas(id_Tugas, judul_tugas, tenggat_waktu, status)')
+  // 2. Query ke Supabase
+  // Pastikan relasi 'Materi' dan 'Tugas' (Foreign Keys) sudah benar di database
+  const { data: kelasArray, error } = await supabaseClient
+    .from('Kelas')
+    .select(`
+      id_Kelas, 
+      nama_kelas, 
+      Materi (
+        id_Materi, 
+        judul_materi, 
+        deskripsi, 
+        tipe_konten, 
+        link_konten, 
+        Tanggal_tayang, 
+        thumbnail_url, 
+        urutan
+      ), 
+      Tugas (
+        id_Tugas, 
+        judul_tugas, 
+        tenggat_waktu, 
+        status
+      )
+    `)
     .eq('id_Kelas', id);
 
+  // 3. Error Handling
   if (error) {
-  console.error("Supabase error:", error.message);
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <h1>Terjadi error Supabase: Cek konsol server Anda.</h1>
-    </div>
-  );
-}
+    console.error("Supabase error:", error.message);
+    return (
+      <div className="flex h-screen items-center justify-center text-red-500">
+        <h1>Terjadi error saat mengambil data. Silakan cek konsol.</h1>
+      </div>
+    );
+  }
 
-// Handle jika array kosong (Kelas tidak ditemukan)
-if (!kelasArray || kelasArray.length === 0) {
-  // Menggunakan notFound() dari Next.js untuk data tidak ditemukan
-  notFound();
-}
+  // 4. Cek apakah data ditemukan
+  if (!kelasArray || kelasArray.length === 0) {
+    notFound();
+  }
 
-// Ambil data objek tunggal dari elemen pertama array
-const kelasData = kelasArray[0] as KelasData;
+  // Ambil item pertama karena .eq('id_Kelas', id) seharusnya unik
+  const kelasData = kelasArray[0] as unknown as KelasDataDB;
 
-  // --- 4. "GLUE" CODE: UBAH DATA DB MENJADI PROPS KOMPONEN ---
+  // 5. Mapping Data (Database -> UI Props)
 
-  const materiData: MateriCardProps[] = kelasData.Materi.map((item: MateriItem) => {
+  // Mapping Materi
+  const materiData: MateriCardProps[] = (kelasData.Materi || []).map((item) => {
     const dynamicTags: string[] = [];
 
-    if (item.tipe_konten) {
-      dynamicTags.push(item.tipe_konten.toUpperCase());
-    }
+    if (item.tipe_konten) dynamicTags.push(item.tipe_konten.toUpperCase());
+    if (item.urutan) dynamicTags.push(`PERTEMUAN - ${item.urutan}`);
 
-    if (item.urutan) {
-      dynamicTags.push(`PERTEMUAN - ${item.urutan}`);
-    }
-
+    // Logika Tanggal Tayang
     try {
       const tanggalTayang = new Date(item.Tanggal_tayang);
       const hariIni = new Date();
       if (tanggalTayang <= hariIni) {
         dynamicTags.push("TAYANG");
       }
-    } catch (error) {
-      console.error("Format tanggal salah:", item.Tanggal_tayang, error);
+    } catch (err) {
+      console.error("Format tanggal salah:", item.Tanggal_tayang);
     }
 
     return {
       id: String(item.id_Materi),
       title: item.judul_materi,
-      date: item.Tanggal_tayang,
+      date: item.Tanggal_tayang, // Pastikan format string tanggal sesuai keinginan UI
       thumbnailUrl: item.thumbnail_url || 'https://placehold.co/200x112/E0E0E0/B0B0B0',
       tags: dynamicTags
     };
   });
 
-  const tugasData: TugasCardProps[] = kelasData.Tugas.map((item: TugasItem) => ({
+  // Mapping Tugas
+  const tugasData: TugasCardProps[] = (kelasData.Tugas || []).map((item) => ({
     id: String(item.id_Tugas),
     title: item.judul_tugas,
     dueDate: item.tenggat_waktu,
     status: (item.status === 'TELAH' ? 'TELAH' : 'BELUM') as 'TELAH' | 'BELUM'
   }));
 
-
-  // --- 5. RENDER KOMPONEN (JSX) ---
+  // 6. Render UI
   return (
     <div className="flex bg-gray-50 min-h-screen">
-      {/* Tambahkan prop 'activeLink' di sini jika Sidebar membutuhkan penanda aktif */}
-      <Sidebar /> 
+      <Sidebar />
+      
       <div className="flex-1 ml-64">
         
         {/* Header */}
         <header className="flex justify-between items-center p-6 border-b border-gray-200 bg-white">
           <h1 className="text-2xl font-semibold text-gray-900">
-            {kelasData.nama_kelas} 
+            {kelasData.nama_kelas}
           </h1>
 
           <div className="flex items-center gap-4">
@@ -147,17 +158,20 @@ const kelasData = kelasArray[0] as KelasData;
               <input 
                 type="search" 
                 placeholder="Search for Trainings" 
-                className="border rounded-full py-2 px-4 pl-10 text-sm w-72" 
+                className="border rounded-full py-2 px-4 pl-10 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-blue-500" 
               />
               <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
-            <button className="flex items-center gap-2 text-sm font-medium text-gray-600 border rounded-full py-2 px-4 hover:bg-gray-100">
+            
+            <button className="flex items-center gap-2 text-sm font-medium text-gray-600 border rounded-full py-2 px-4 hover:bg-gray-100 transition">
               Enrollment Status
               <ChevronDown size={16} />
             </button>
-            <button className="text-gray-500 hover:text-gray-800">
+            
+            <button className="text-gray-500 hover:text-gray-800 transition">
               <Bell size={22} />
             </button>
+            
             <button>
               <Image 
                 src="https://placehold.co/32x32/E0E0E0/B0B0B0?text=MA" 
@@ -170,33 +184,47 @@ const kelasData = kelasArray[0] as KelasData;
           </div>
         </header>
 
-        {/* Area Isi Konten (Materials & Tugas) */}
-        <div className="flex p-6 gap-6">
-          <section className="flex-grow">
+        {/* Konten Utama */}
+        <div className="flex p-6 gap-6 items-start">
+          
+          {/* Kolom Kiri: Materials List */}
+          <section className="flex-grow w-full min-w-0">
             <h2 className="text-2xl font-semibold mb-5">Materials</h2>
+            
+            {/* List Materi */}
             <div className="space-y-5">
-              {materiData.map((materi) => (
-                <MateriCard 
-                  key={materi.id} 
-                  {...materi}
-                />
-              ))}
+              {materiData.length > 0 ? (
+                materiData.map((materi) => (
+                  <MateriCard 
+                    key={materi.id} 
+                    {...materi}
+                  />
+                ))
+              ) : (
+                <p className="text-gray-500">Belum ada materi untuk kelas ini.</p>
+              )}
             </div>
           </section>
           
+          {/* Kolom Kanan: Tugas List (Sticky) */}
           <aside className="w-80 flex-shrink-0">
             <div className="sticky top-6">
               <h2 className="text-2xl font-semibold mb-5">Tugas</h2>
-              <div>
-                {tugasData.map((tugas) => (
-                  <TugasCard 
-                    key={tugas.id}
-                    {...tugas}
-                  />
-                ))}
+              <div className="flex flex-col gap-4">
+                {tugasData.length > 0 ? (
+                  tugasData.map((tugas) => (
+                    <TugasCard 
+                      key={tugas.id}
+                      {...tugas}
+                    />
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">Tidak ada tugas aktif.</p>
+                )}
               </div>
             </div>
           </aside>
+
         </div>
 
         {/* Footer */}
@@ -205,6 +233,7 @@ const kelasData = kelasArray[0] as KelasData;
             © Copyright 2025, Geniuz. All Rights Reserved
           </p>
         </footer>
+
       </div>
     </div>
   );

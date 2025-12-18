@@ -9,11 +9,12 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // mencegah reload halaman
-    router.push("/dashboard"); // redirect setelah login
+    // Di sini nanti bisa tambahkan logika Supabase auth
+    router.push("/dashboard"); // redirect sementara ke dashboard
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[url('/background.png')]">
+    <div className="flex min-h-screen items-center justify-center bg-[url('/background.png')] bg-cover bg-center">
       {/* Logo */}
       <div className="top-9 fixed justify-center">
         <Image src="/logo_putih.svg" alt="Les2an Geniuz" width={140} height={50} />

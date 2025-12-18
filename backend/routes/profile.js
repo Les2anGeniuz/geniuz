@@ -4,7 +4,11 @@ import { getMyProfile, updateMyProfile } from '../controllers/profileController.
 
 const router = express.Router()
 
-router.get('/me', requireAuth, getMyProfile)
-router.put('/me', requireAuth, updateMyProfile)
+// GET /api/me
+// (Path cukup '/' karena sudah di-mount ke '/api/me' di server.js)
+router.get('/', requireAuth, getMyProfile)
+
+// PUT /api/me
+router.put('/', requireAuth, updateMyProfile)
 
 export default router

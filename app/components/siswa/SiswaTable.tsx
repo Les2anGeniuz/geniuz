@@ -18,12 +18,12 @@ const SiswaTable: React.FC<Props> = ({ data }) => {
         <div className="w-full">
             <div className="overflow-x-auto">
                 <table className="w-full max-w-full mx-auto text-[13px] min-w-[720px] rounded-lg overflow-hidden">
-                    <thead>
+                    <thead className="sticky top-0 z-10 bg-[#002D5B]">
                         <tr className="bg-[#002D5B] text-white text-[14px]">
-                            <th className="py-3 px-4 text-left font-semibold rounded-tl-lg">Siswa</th>
+                            <th className="py-3 px-4 text-left font-semibold">Siswa</th>
                             <th className="py-3 px-4 text-left font-semibold">Kelas</th>
                             <th className="py-3 px-4 text-right font-semibold">Tanggal Masuk</th>
-                            <th className="py-3 px-4 text-right font-semibold rounded-tr-lg">Terakhir Aktif</th>
+                            <th className="py-3 px-4 text-right font-semibold">Terakhir Aktif</th>
                         </tr>
                     </thead>
 

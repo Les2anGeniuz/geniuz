@@ -10,18 +10,18 @@ const Overview: React.FC = () => {
   // State untuk statistik
   const [statistics, setStatistics] = useState({
     totalClasses: 0,
-    completedTasks: 0,
+    completedTasks: 0, // Dalam skema baru, ini bisa dihitung dari progres 100%
     progress: 0,
   });
-
-  // State pendukung
-  const [faculty, setFaculty] = useState<string>("-"); 
+  const [faculty, setFaculty] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
 
         // 1. Cek User yang sedang login (Auth)
         const { data: { session } } = await supabase.auth.getSession();
@@ -32,102 +32,68 @@ const Overview: React.FC = () => {
           return;
         }
 
-        const userEmail = session.user.email;
-        const token = session.access_token;
+        // 1. Ambil Profil User
+        const { data: userProfile, error: userErr } = await supabase
+          .from("User")
+          .select("id_User, nama_lengkap, email, id_Fakultas")
+          .eq("email", user.email)
+          .single();
 
-        // 2. Coba ambil data dari API (/api/me)
-        let profileFound = null;
-        let statsFound = null;
+        if (userErr) throw userErr;
+        setUserData(userProfile);
 
-        try {
-          const res = await fetch(`/api/me`, {
-            method: "GET",
-            headers: {
-              "Authorization": `Bearer ${token}`,
-            },
-          });
-
-          if (res.ok) {
-            const json = await res.json();
-            profileFound = json.profile;
-            statsFound = json.stats;
-          } else {
-            console.warn("API Error (Mungkin beda nama kolom), mencoba Fallback ke Client...");
-          }
-        } catch (apiErr) {
-          console.error("Gagal fetch API, lanjut ke Fallback...", apiErr);
+        // 2. Ambil Data Fakultas (Jika ada id_Fakultas)
+        if (userProfile?.id_Fakultas) {
+          const { data: fakData } = await supabase
+            .from("Fakultas")
+            .select("nama_fakultas")
+            .eq("id_Fakultas", userProfile.id_Fakultas)
+            .single();
+          setFaculty(fakData?.nama_fakultas || "-");
         }
 
-        // 3. LOGIKA FALLBACK (Penting jika API masih error)
-        // Jika API gagal atau tidak mengembalikan profile, kita ambil langsung dari tabel 'User'
-        if (!profileFound && userEmail) {
-          const { data: directProfile, error: directErr } = await supabase
-            .from("User") // Pastikan nama tabel sesuai Case Sensitive
-            .select("nama_lengkap, id_User") // Kita ambil kolom yang PASTI ADA di screenshot kamu
-            .eq("email", userEmail)
-            .maybeSingle();
+        // 3. Ambil Statistik dari Tabel Progress (Sesuai skema baru API Anda)
+        // Kita menghitung rata-rata progress dan jumlah kelas yang diikuti
+        const { data: progressData, error: progErr } = await supabase
+          .from("Progress")
+          .select("Prsentase_Progress, id_Kelas")
+          .eq("id_User", userProfile.id_User);
 
-          if (directErr) {
-            console.error("Fallback error:", directErr);
-          } else {
-            profileFound = directProfile;
-          }
-        }
-
-        // 4. Update State Profile
-        if (profileFound) {
-          setUserData(profileFound);
+        if (!progErr && progressData) {
+          const totalClasses = progressData.length;
+          const totalProgress = progressData.reduce((acc, curr) => acc + (curr.Prsentase_Progress || 0), 0);
+          const completedTasks = progressData.filter(p => (p.Prsentase_Progress || 0) >= 100).length;
           
-          // Cek fakultas (jika ada kolom id_Fakultas nanti)
-          // Menggunakan optional chaining (?.) agar tidak error jika kolom tidak ada
-          const idFakultas = profileFound.id_Fakultas || profileFound.faculty_id;
-          if (idFakultas) {
-            fetchFacultyName(String(idFakultas));
-          }
-        }
-
-        // 5. Update State Statistics (Ambil dari API atau default 0)
-        if (statsFound) {
           setStatistics({
-            totalClasses: statsFound.total_classes || 0,
-            completedTasks: statsFound.completed_tasks || 0,
-            progress: statsFound.progress || 0,
+            totalClasses: totalClasses,
+            completedTasks: completedTasks, // Kelas yang sudah 100%
+            progress: totalClasses > 0 ? Math.round(totalProgress / totalClasses) : 0,
           });
         }
 
       } catch (error) {
-        console.error("Critical Error di Overview:", error);
+        console.error("Error loading dashboard data:", error);
       } finally {
         setLoading(false);
-      }
-    };
-
-    // Helper: Ambil nama fakultas
-    const fetchFacultyName = async (facultyId: string) => {
-      try {
-        const res = await fetch(`/api/fakultas`);
-        if (!res.ok) return;
-        const json = await res.json();
-        const list: any[] = json?.data ?? [];
-        const found = list.find((f) => String(f.id_Fakultas) === String(facultyId));
-        setFaculty(found?.nama_fakultas || "-");
-      } catch (e) { 
-        /* Silent error */ 
       }
     };
 
     fetchData();
   }, []);
 
-  if (loading) return <div className="p-6 text-gray-400">Sedang memuat data...</div>;
+  if (loading) {
+    return (
+      <div className="w-full h-64 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <span className="ml-3 text-gray-500">Memuat data belajar...</span>
+      </div>
+    );
+  }
 
-  // Data Tampilan
-  const displayName = userData?.nama_lengkap || "Mahasiswa";
-  // Gunakan gambar default karena di tabel User kamu belum ada kolom 'profile_picture'
-  const profilePicture = "/default-profile.png"; 
+  const profilePicture = "/default-profile.png";
 
   return (
-    <div className="w-full"> 
+    <div className="w-full">
       <h1 className="text-3xl font-semibold text-black mb-3">Overview</h1>
 
       {/* Bagian Profil */}
@@ -142,51 +108,51 @@ const Overview: React.FC = () => {
         </div>
         <div className="flex-grow text-center md:text-left">
           <h2 className="text-3xl font-bold text-[#09090b] mb-1 leading-tight">
-            Semangat Belajar, <br className="hidden md:block"/>
-            {displayName}!
+            Semangat Belajar, <br className="hidden md:block" />
+            {userData?.nama_lengkap || "Siswa"}!
           </h2>
-          <p className="text-blue-500 font-bold text-base cursor-pointer hover:underline">
-            {faculty}
+          <p className="text-blue-500 font-bold text-base">
+            {faculty || "-"}
           </p>
         </div>
       </div>
 
       {/* Grid Statistik */}
-      <div className="flex justify-between w-[600px] gap-6 mx-auto">
+      <div className="flex justify-between w-[600px] gap-6">
         
-        {/* Total Kelas */}
+        {/* Kartu Total Kelas */}
         <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="text-gray-700">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
             </div>
-            <span className="text-gray-500 font-medium text-sm">Total Kelas</span>
+            <span className="text-gray-500 font-medium text-sm">Kelas Diikuti</span>
           </div>
           <div className="flex items-baseline gap-2 mt-auto">
             <span className="text-2xl font-bold text-[#09090b]">{statistics.totalClasses}</span>
           </div>
         </div>
 
-        {/* Tugas Selesai */}
+        {/* Kartu Kelas Selesai */}
         <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="text-gray-700">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <span className="text-gray-500 font-medium text-sm">Tugas Selesai</span>
+            <span className="text-gray-500 font-medium text-sm">Kelas Selesai</span>
           </div>
           <div className="flex items-baseline gap-2 mt-auto">
             <span className="text-2xl font-bold text-[#09090b]">{statistics.completedTasks}</span>
           </div>
         </div>
 
-        {/* Progres Belajar */}
+        {/* Kartu Rata-rata Progres */}
         <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="text-gray-700">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
             </div>
-            <span className="text-gray-500 font-medium text-sm">Progres</span>
+            <span className="text-gray-500 font-medium text-sm">Avg. Progres</span>
           </div>
           <div className="flex items-center justify-center gap-2 mt-auto">
             <span className="text-2xl font-bold text-[#09090b]">{Math.round(statistics.progress)}%</span>

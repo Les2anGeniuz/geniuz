@@ -21,16 +21,14 @@ const Overview: React.FC = () => {
       try {
         setLoading(true);
         const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-
-        // 1. Cek User yang sedang login (Auth)
-        const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.user) {
           console.warn("User belum login.");
           setLoading(false);
           return;
         }
+
+        const user = session.user;
 
         // 1. Ambil Profil User
         const { data: userProfile, error: userErr } = await supabase

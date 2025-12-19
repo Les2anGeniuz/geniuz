@@ -5,13 +5,13 @@ import Image from 'next/image';
 import { Search, Bell, ChevronDown } from 'lucide-react';
 
 // 1. Import Komponen UI
-import Sidebar from '../../components/Kelas2/sidebar';
-import MateriCard, { MateriCardProps } from '../../components/Kelas2/Materi';
-import TugasCard, { TugasCardProps } from '../../components/Kelas2/Tugas';
+import Sidebar from '../../../components/Kelas2/sidebar';
+import MateriCard, { MateriCardProps } from '../../../components/Kelas2/Materi';
+import TugasCard, { TugasCardProps } from '../../../components/Kelas2/Tugas';
 
 // 2. Import Supabase Client
 // Menggunakan alias 'supabaseClient' sesuai permintaan Anda
-import { supabase as supabaseClient } from '../../lib/supabaseClient';
+import { supabase as supabaseClient } from '../../../lib/supabaseClient';
 
 // --- DEFINISI TIPE DATA ---
 

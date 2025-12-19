@@ -11,12 +11,12 @@ const FAKULTAS_OPTIONS = [
   "Fakultas Product and Design",
 ];
 
-const FAKULTAS_TO_KELAS_ID: Record<string, number> = {
-  "Fakultas Finance": 1011,
-  "Fakultas Data": 1111,
-  "Fakultas IT and Software Dev": 1211,
-  "Fakultas Business and Marketing": 1311,
-  "Fakultas Product and Design": 1411,
+const FAKULTAS_TO_FAKULTAS_ID: Record<string, number> = {
+  "Fakultas Finance": 10,
+  "Fakultas Data": 11,
+  "Fakultas IT and Software Dev": 12,
+  "Fakultas Business and Marketing": 13,
+  "Fakultas Product and Design": 14,
 };
 
 export default function DataDiriPage() {
@@ -49,13 +49,15 @@ export default function DataDiriPage() {
       return;
     }
 
-    const idKelas = FAKULTAS_TO_KELAS_ID[formData.fakultas];
-    if (!idKelas) {
-      alert("Kelas untuk fakultas ini belum diatur. Cek konfigurasi.");
+    const idFakultas = FAKULTAS_TO_FAKULTAS_ID[formData.fakultas];
+    if (!idFakultas) {
+      alert("ID Fakultas untuk pilihan ini belum diatur. Cek konfigurasi.");
       return;
     }
 
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
     if (!token) {
       alert("Sesi login berakhir, silakan login ulang.");
       router.push("/login");
@@ -64,8 +66,8 @@ export default function DataDiriPage() {
 
     setLoading(true);
     try {
-      const payload: any = {
-        id_Kelas: idKelas,
+      const payload = {
+        id_Fakultas: idFakultas,
         domisili: formData.domisili,
         tanggal_lahir: formData.tanggalLahir,
         instansi: formData.instansi,
@@ -88,7 +90,10 @@ export default function DataDiriPage() {
       }
 
       if (data?.pendaftaran?.id_Pendaftaran) {
-        localStorage.setItem("idPendaftaran", String(data.pendaftaran.id_Pendaftaran));
+        localStorage.setItem(
+          "idPendaftaran",
+          String(data.pendaftaran.id_Pendaftaran)
+        );
       }
 
       router.push("/payment");
@@ -102,14 +107,26 @@ export default function DataDiriPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[url('/background.png')] bg-cover bg-center">
       <div className="absolute top-9">
-        <Image src="/logo_putih.svg" alt="Les2an Geniuz" width={140} height={50} />
+        <Image
+          src="/logo_putih.svg"
+          alt="Les2an Geniuz"
+          width={140}
+          height={50}
+        />
       </div>
 
       <div className="bg-white/95 backdrop-blur-md p-10 rounded-3xl shadow-xl w-full max-w-[800px] text-center">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Isi Data Diri</h1>
-        <p className="text-gray-500 mb-8">Isi data di bawah secara lengkap dan jujur</p>
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
+          Isi Data Diri
+        </h1>
+        <p className="text-gray-500 mb-8">
+          Isi data di bawah secara lengkap dan jujur
+        </p>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left"
+        >
           <div className="space-y-4">
             <div>
               <label className="text-sm font-semibold">Domisili</label>
@@ -137,7 +154,9 @@ export default function DataDiriPage() {
             </div>
 
             <div>
-              <label className="text-sm font-semibold">Nama Instansi Pendidikan</label>
+              <label className="text-sm font-semibold">
+                Nama Instansi Pendidikan
+              </label>
               <input
                 type="text"
                 placeholder="Contoh: Universitas Sebelas Maret"
@@ -173,7 +192,7 @@ export default function DataDiriPage() {
               <label className="text-sm font-semibold">Jurusan</label>
               <input
                 type="text"
-                placeholder="Contoh: Informatika"
+                placeholder="Contoh: Sains Data"
                 value={formData.jurusan}
                 onChange={(e) =>
                   setFormData({ ...formData, jurusan: e.target.value })

@@ -2,14 +2,27 @@ import { supabaseAdmin } from '../services/supabase.js'
 
 export const createPendaftaran = async (req, res) => {
   const userId = req.user.id_User
-  const { id_Kelas, domisili, tanggal_lahir, jurusan, semester, instansi, nama_lengkap, email } = req.body
+  const {
+    id_Fakultas,
+    domisili,
+    tanggal_lahir,
+    jurusan,
+    semester,
+    instansi,
+    nama_lengkap,
+    email
+  } = req.body
+
+  if (!id_Fakultas) {
+    return res.status(400).json({ error: 'id_Fakultas wajib diisi' })
+  }
 
   const { data, error } = await supabaseAdmin
     .from('Pendaftaran')
     .insert([
       {
         id_User: userId,
-        id_Kelas,
+        id_Fakultas: id_Fakultas,
         Domisili: domisili,
         Tanggal_Lahir: tanggal_lahir,
         Jurusan: jurusan,
@@ -21,9 +34,13 @@ export const createPendaftaran = async (req, res) => {
       }
     ])
     .select()
+    .single()
 
-  if (error) return res.status(400).json({ error: error.message })
-  return res.status(201).json({ pendaftaran: data[0] })
+  if (error) {
+    return res.status(400).json({ error: error.message })
+  }
+
+  return res.status(201).json({ pendaftaran: data })
 }
 
 export const getMyPendaftarans = async (req, res) => {

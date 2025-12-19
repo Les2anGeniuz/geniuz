@@ -17,7 +17,6 @@ import mentorRoutes from './routes/mentor.js'
 import adminAuthRoutes from './routes/adminAuth.js'
 import adminRoutes from './routes/admin.js'
 import dashboardRoutes from './routes/dashboard.js'
-import dashboardRoutes from './routes/dashboard.js'
 import adminFakultasRoutes from './routes/adminFakultas.js'
 import adminMentorRoutes from './routes/adminMentor.js'
 import adminKelasRoutes from './routes/adminKelas.js'
@@ -59,3 +58,8 @@ app.use('/api/admin/siswa', adminSiswaRoutes)
 app.listen(process.env.PORT || 5000, () => {
   console.log(`Backend ready on http://localhost:${process.env.PORT || 5000}`)
 })
+
+app.use(cors({
+  origin: 'http://localhost:3000', // Izinkan frontend kamu
+  credentials: true
+}));

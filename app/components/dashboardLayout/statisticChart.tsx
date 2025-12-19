@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 const StatisticsChart: React.FC = () => {
   // Hanya 3 Kategori: Tugas, Materi, Kehadiran

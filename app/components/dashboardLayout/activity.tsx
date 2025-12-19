@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "../../lib/supabaseClient"; // Pastikan path ini benar
+import { supabase } from "@/lib/supabaseClient"; // Pastikan path ini benar
 
 const Activities: React.FC = () => {
   const [activities, setActivities] = useState<any[]>([]);

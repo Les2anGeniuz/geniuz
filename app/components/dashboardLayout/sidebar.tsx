@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 interface UserData {
   name: string;
@@ -25,62 +25,99 @@ const Sidebar: React.FC = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      // 1. Cek Auth User (Login pakai apa?)
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-      if (authError || !user || !user.email) {
-        return; 
-      }
-
-      // Default data sementara
-      let currentName = user.email.split('@')[0];
-      let currentFakultas = "-";
-      let classesList: string[] = [];
-
+      console.log("--- MULAI FETCH SIDEBAR ---");
       try {
-        // 2. Ambil data User dari tabel 'User' berdasarkan Email
-        // Kita butuh 'id_User' (angka) untuk query ke tabel Pendaftaran
-        const { data: dbUser } = await supabase
+        setIsLoading(true);
+
+        // 1. Cek Sesi
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          console.log("Sidebar: Tidak ada user login.");
+          setIsLoading(false);
+          return;
+        }
+
+        const userEmail = session.user.email;
+        console.log("Sidebar: User Email =", userEmail);
+
+        // Default Data
+        let currentName = userEmail?.split('@')[0] || "User";
+        let currentFakultas = "-";
+        let userId: number | null = null;
+
+        // 2. AMBIL ID USER DARI TABEL 'User'
+        // Kita perlu id_User (integer) yang ada di tabel publik kamu
+        const { data: dbUser, error: dbError } = await supabase
           .from("User")
-          .select("id_User, nama_lengkap, fakultas") // Pastikan kolom id_User diambil
-          .eq("email", user.email)
-          .single();
+          .select("id_User, nama_lengkap") 
+          .eq("email", userEmail)
+          .maybeSingle();
 
+        if (dbError) console.error("Sidebar: Error fetch User table", dbError.message);
+        
         if (dbUser) {
-          currentName = dbUser.nama_lengkap || currentName;
-          currentFakultas = dbUser.fakultas || "-";
+          console.log("Sidebar: Data User ditemukan =>", dbUser);
+          userId = dbUser.id_User;
+          if (dbUser.nama_lengkap) currentName = dbUser.nama_lengkap;
+        } else {
+          console.warn("Sidebar: User tidak ditemukan di tabel 'User'. Pastikan email sama.");
+        }
 
-          // 3. Ambil Kelas dari tabel 'Pendaftaran' menggunakan 'id_User'
-          // Kita relasikan ke tabel 'Kelas' untuk ambil namanya
-          const { data: pendaftaranData } = await supabase
+        // 3. AMBIL KELAS (METODE MANUAL / NO JOIN)
+        // Ini lebih aman jika Foreign Key belum disetting dengan benar
+        let classesList: string[] = [];
+        
+        if (userId) {
+          console.log("Sidebar: Mencari pendaftaran untuk id_User =", userId);
+          
+          // A. Ambil id_Kelas dari Pendaftaran
+          const { data: pendaftaranData, error: pendError } = await supabase
             .from("Pendaftaran")
-            .select(`
-              Kelas (
-                nama_kelas
-              )
-            `)
-            .eq("id_User", dbUser.id_User); // Pakai id_User dari database, bukan auth user.id
+            .select("id_Kelas") // Ambil ID-nya saja dulu
+            .eq("id_User", userId);
 
-          if (pendaftaranData) {
-            // Mapping data agar jadi array string nama kelas saja
-            // @ts-ignore (Mengabaikan warning typescript jika struktur join agak kompleks)
-            classesList = pendaftaranData
-              .map((item: any) => item.Kelas?.nama_kelas)
-              .filter((name: string) => name); 
+          if (pendError) {
+            console.error("Sidebar: Error fetch Pendaftaran", pendError.message);
+          } else {
+            console.log("Sidebar: Data Pendaftaran mentah =>", pendaftaranData);
+            
+            // Ambil array ID Kelas (misal: [1, 2, 5])
+            // Pastikan id_Kelas tidak null
+            const classIds = pendaftaranData
+                ?.map((item: any) => item.id_Kelas)
+                .filter((id) => id !== null) || [];
+
+            console.log("Sidebar: ID Kelas yang ditemukan =>", classIds);
+
+            // B. Jika ada ID Kelas, ambil Nama Kelas dari tabel 'Kelas'
+            if (classIds.length > 0) {
+              const { data: kelasData, error: kelasError } = await supabase
+                .from("Kelas")
+                .select("nama_kelas")
+                .in("id_Kelas", classIds); // Ambil nama kelas yang ID-nya ada di list
+
+              if (kelasError) {
+                console.error("Sidebar: Error fetch tabel Kelas", kelasError.message);
+              } else if (kelasData) {
+                console.log("Sidebar: Data Kelas Akhir =>", kelasData);
+                classesList = kelasData.map((k: any) => k.nama_kelas);
+              }
+            }
           }
         }
+
+        // 4. Update State
+        setUserData({
+          name: currentName,
+          fakultas: currentFakultas,
+          classes: classesList,
+        });
+
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Sidebar: Critical Error:", err);
+      } finally {
+        setIsLoading(false);
       }
-
-      // 4. Update State
-      setUserData({
-        name: currentName,
-        fakultas: currentFakultas,
-        classes: classesList,
-      });
-
-      setIsLoading(false);
     };
 
     fetchUserData();
@@ -115,7 +152,7 @@ const Sidebar: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className="font-bold text-lg text-[#0a4378] capitalize truncate w-48">
+              <div className="font-bold text-lg text-[#0a4378] capitalize truncate w-48" title={userData.name}>
                 {userData.name}
               </div>
               <span className="text-xs text-gray-500 font-medium mt-1">

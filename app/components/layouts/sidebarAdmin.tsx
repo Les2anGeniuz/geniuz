@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -12,7 +12,8 @@ import {
   UserLinear,
   Logout3Linear,
 } from "solar-icon-set";
-import { supabase } from "../../../lib/supabaseClient";
+// Pastikan path ini sesuai dengan struktur project Anda, biasanya @/lib/... atau ../../lib/...
+import { supabase } from "@/lib/supabaseClient"; 
 
 interface UserData {
   name: string;
@@ -21,24 +22,10 @@ interface UserData {
 
 const SidebarAdmin = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data, error } = await supabase
-        .from("User")
-        .select("nama_lengkap, email")
-        .limit(1)
-        .single();
-
-      if (!error && data) {
-        setUser({ name: data.nama_lengkap, email: data.email });
-      }
-    };
-
-    fetchUser();
-  }, []);
-
+  // Menu untuk Admin
   const menuOverview = [
     { name: "Dashboard", icon: Home2Linear, href: "/admin/dashboard" },
     { name: "Analytics", icon: ChartSquareLinear, href: "/admin/analytics" },
@@ -49,6 +36,45 @@ const SidebarAdmin = () => {
     { name: "Materi", icon: DocumentTextLinear, href: "/admin/materi" },
     { name: "Siswa", icon: UserLinear, href: "/admin/siswa" },
   ];
+
+  // Fetch Data User (Admin)
+  useEffect(() => {
+    const fetchUser = async () => {
+      // Mengambil session user yang sedang login
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error("Session error", sessionError);
+        return;
+      }
+
+      // Opsional: Ambil detail tambahan dari tabel User jika perlu
+      const { data, error } = await supabase
+        .from("User")
+        .select("nama_lengkap, email")
+        .eq("email", session.user.email) // Pastikan mencocokkan user yang benar
+        .single();
+
+      if (!error && data) {
+        setUser({ name: data.nama_lengkap, email: data.email });
+      } else {
+        // Fallback ke data session jika data tabel gagal diambil
+        setUser({ 
+            name: session.user.user_metadata.full_name || "Admin", 
+            email: session.user.email || "" 
+        });
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  // Fungsi Logout (Diambil dari logika HEAD agar berfungsi)
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem("token"); // Hapus token jika Anda menyimpannya manual
+    router.push("/login"); // Redirect ke login
+  };
 
   const isActive = (path: string) =>
     pathname === path
@@ -131,13 +157,13 @@ const SidebarAdmin = () => {
 
       {/* Logout */}
       <div className="px-6 py-4 border-t border-gray-200">
-        <Link
-          href="/logout"
-          className="flex items-center space-x-2 text-[#0A4378] hover:text-red-500 transition-colors"
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center space-x-2 text-[#0A4378] hover:text-red-500 transition-colors"
         >
           <Logout3Linear size={18} />
           <span className="font-medium">Logout</span>
-        </Link>
+        </button>
       </div>
     </aside>
   );

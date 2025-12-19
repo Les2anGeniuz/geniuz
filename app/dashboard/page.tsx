@@ -1,29 +1,57 @@
 "use client";
 
-import Sidebar from "../components/sidebar";
-import Topbar from "../components/topbar";
-import Overview from "../components/overview";  // Komponen Overview yang sudah dibuat
-import SearchBar from "../components/searchbar"; // Komponen SearchBar yang sudah dibuat
+import Sidebar from "../components/dashboardLayout/sidebar";
+import Topbar from "../components/dashboardLayout/topbar";
+import Overview from "../components/dashboardLayout/overview";
+import SearchBar from "../components/dashboardLayout/searchbar";
+import Activities from "../components/dashboardLayout/activity"; 
+import StatisticsChart from "../components/dashboardLayout/statisticChart"; 
+import Achievements from "../components/dashboardLayout/achievement"; 
+import MyClasses from "../components/dashboardLayout/myClasses";
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-col">
-      {/* Sidebar */}
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar tetap di kiri */}
       <Sidebar />
-
-      {/* Topbar */}
+      
+      {/* Topbar tetap di atas */}
       <Topbar />
 
-      {/* Search Bar */}
-      <div className="fixed w-full top-0 left-0 z-50">
-        <SearchBar />
-      </div>
+      <div className="ml-64 pt-24 px-8 pb-10 w-full">
+        
+        {/* Search Bar di kanan atas */}
+        <div className="flex justify-end mb-6">
+          <SearchBar />
+        </div>
 
-      {/* Konten Dashboard */}
-      <div className="ml-64 mt-24 p-6 w-full overflow-y-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Overview and other sections */}
-          <Overview />
+        {/* GRID UTAMA 
+          xl:flex-row akan membuat dua kolom pada layar besar.
+          items-start agar tinggi box kiri dan kanan tidak saling memaksa.
+        */}
+        <div className="flex flex-col xl:flex-row gap-8 items-start justify-center">
+          
+          {/* === KOLOM KIRI (Lebar Tetap 600px sesuai desain Overview) === */}
+          <div className="flex flex-col gap-6 w-full xl:w-[600px] flex-shrink-0">
+            {/* Kartu Profil & Stat Angka */}
+            <Overview />
+            
+            {/* Kartu Grafik Pie */}
+            <StatisticsChart />
+            
+            {/* Kartu List Kelas (Di bawah statistik) */}
+            <MyClasses />
+          </div>
+
+          {/* === KOLOM KANAN (Tugas Aktif + Pencapaian) === */}
+          <div className="flex-1 w-full min-w-[400px] flex flex-col gap-6"> 
+            {/* Kartu Tugas Aktif (Sesuai Gambar) */}
+            <Activities />
+            
+            {/* Kartu Achievement / Sertifikat */}
+            <Achievements />
+          </div>
+
         </div>
       </div>
     </div>

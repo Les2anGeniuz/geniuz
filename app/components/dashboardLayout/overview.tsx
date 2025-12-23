@@ -1,89 +1,102 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { supabase } from "../../../lib/supabaseClient";
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type DashProfile = {
+  nama_lengkap?: string | null;
+  nama_fakultas?: string | null;
+};
+
+type DashOverview = {
+  total_kelas?: number;
+  tugas_selesai?: number;
+  progress?: number;
+};
+
+const TOKEN_KEY = "access_token";
+const getToken = () => (typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY));
+const clearToken = () => typeof window !== "undefined" && localStorage.removeItem(TOKEN_KEY);
 
 const Overview: React.FC = () => {
-  const [userData, setUserData] = useState<any>(null);
-  const [faculty, setFaculty] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
+  const [profile, setProfile] = useState<DashProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
+
   const [statistics, setStatistics] = useState({
     totalClasses: 0,
     completedTasks: 0,
     progress: 0,
   });
 
+  const router = useRouter();
+
+  const API_BASE = useMemo(
+    () => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api",
+    []
+  );
+
   useEffect(() => {
-    const fetchData = async () => {
+    const controller = new AbortController();
+
+    const apiGet = async <T,>(path: string, token: string): Promise<T> => {
+      const url = `${API_BASE}${path}`;
+      console.log("[Overview] FETCH:", url);
+
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+      });
+
+      if (res.status === 401) {
+        clearToken();
+        router.replace("/login");
+        throw new Error("Unauthorized");
+      }
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`Request gagal ${res.status}: ${text}`);
+      }
+
+      return (await res.json()) as T;
+    };
+
+    (async () => {
+      setLoading(true);
+      setErrorMsg("");
+
       try {
-        setLoading(true);
-
-        // 1. Ambil Session User dari Supabase Auth
-        const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
-        
-        if (sessionErr) throw sessionErr;
-        const user = session?.user;
-
-        if (!user) {
-          console.warn("User belum login.");
-          setLoading(false);
+        const token = getToken();
+        if (!token) {
+          router.replace("/login");
           return;
         }
 
-        // 2. Ambil Profil User dari Tabel Database
-        const { data: userProfile, error: userErr } = await supabase
-          .from("User")
-          .select("id_User, nama_lengkap, email, id_Fakultas")
-          .eq("email", user.email)
-          .maybeSingle();
+        const [prof, ov] = await Promise.all([
+          apiGet<DashProfile>("/dashboard/profile", token),
+          apiGet<DashOverview>("/dashboard/overview", token),
+        ]);
 
-        if (userErr) {
-          console.error("Gagal ambil profil user:", userErr.message);
-        } else if (!userProfile) {
-          console.log("Data di tabel 'User' tidak ditemukan untuk email ini.");
-        } else {
-          setUserData(userProfile);
+        setProfile(prof);
 
-          // 3. Ambil Data Fakultas
-          if (userProfile.id_Fakultas) {
-            const { data: fakData } = await supabase
-              .from("Fakultas")
-              .select("nama_fakultas")
-              .eq("id_Fakultas", userProfile.id_Fakultas)
-              .maybeSingle();
-            
-            if (fakData) setFaculty(fakData.nama_fakultas);
-          }
-
-          // 4. Ambil Statistik dari Tabel Progress
-          const { data: progressData, error: progErr } = await supabase
-            .from("Progress")
-            .select("Prsentase_Progress, id_Kelas")
-            .eq("id_User", userProfile.id_User);
-
-          if (progErr) {
-            console.error("Gagal ambil data progress:", progErr.message);
-          } else if (progressData) {
-            const totalClasses = progressData.length;
-            const totalProgress = progressData.reduce((acc, curr) => acc + (curr.Prsentase_Progress || 0), 0);
-            const completedTasks = progressData.filter(p => (p.Prsentase_Progress || 0) >= 100).length;
-            
-            setStatistics({
-              totalClasses,
-              completedTasks,
-              progress: totalClasses > 0 ? Math.round(totalProgress / totalClasses) : 0,
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Terjadi kesalahan sistem:", error);
+        setStatistics({
+          totalClasses: Number(ov?.total_kelas ?? 0),
+          completedTasks: Number(ov?.tugas_selesai ?? 0),
+          progress: Number(ov?.progress ?? 0),
+        });
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        console.error("[Overview] Error:", e);
+        setErrorMsg(e?.message || "Terjadi kesalahan sistem.");
       } finally {
         setLoading(false);
       }
-    };
+    })();
 
-    fetchData();
-  }, []);
+    return () => controller.abort();
+  }, [API_BASE, router]);
 
   if (loading) {
     return (
@@ -94,6 +107,22 @@ const Overview: React.FC = () => {
     );
   }
 
+  if (errorMsg) {
+    return (
+      <div className="w-full">
+        <h1 className="text-3xl font-semibold text-black mb-3">Overview</h1>
+        <div className="w-[600px] bg-white border border-red-200 rounded-xl p-6 shadow-sm">
+          <p className="text-red-600 font-semibold">Gagal memuat data</p>
+          <p className="text-gray-600 mt-1">{errorMsg}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const fullName = profile?.nama_lengkap || "Siswa";
+  const initial = fullName.charAt(0).toUpperCase();
+  const faculty = profile?.nama_fakultas || "Fakultas Belum Terdaftar";
+
   return (
     <div className="w-full">
       <h1 className="text-3xl font-semibold text-black mb-3">Overview</h1>
@@ -101,19 +130,16 @@ const Overview: React.FC = () => {
       <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-6 mb-6 flex flex-col md:flex-row items-center gap-3 shadow-sm">
         <div className="flex-shrink-0">
           <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-gray-100 flex items-center justify-center overflow-hidden">
-            <span className="text-4xl font-bold text-gray-400">
-              {userData?.nama_lengkap ? userData.nama_lengkap.charAt(0).toUpperCase() : "S"}
-            </span>
+            <span className="text-4xl font-bold text-gray-400">{initial}</span>
           </div>
         </div>
+
         <div className="flex-grow text-center md:text-left">
           <h2 className="text-3xl font-bold text-[#09090b] mb-1 leading-tight">
             Semangat Belajar, <br className="hidden md:block" />
-            {userData?.nama_lengkap || "Siswa"}!
+            {fullName}!
           </h2>
-          <p className="text-blue-500 font-bold text-base">
-            {faculty || "Fakultas Belum Terdaftar"}
-          </p>
+          <p className="text-blue-500 font-bold text-base">{faculty}</p>
         </div>
       </div>
 
@@ -124,12 +150,12 @@ const Overview: React.FC = () => {
         </div>
 
         <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
-          <span className="text-gray-500 font-medium text-sm">Kelas Selesai</span>
+          <span className="text-gray-500 font-medium text-sm">Tugas Selesai</span>
           <span className="text-2xl font-bold text-[#09090b]">{statistics.completedTasks}</span>
         </div>
 
         <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
-          <span className="text-gray-500 font-medium text-sm">Avg. Progres</span>
+          <span className="text-gray-500 font-medium text-sm">Progress Belajar</span>
           <span className="text-2xl font-bold text-[#09090b]">{statistics.progress}%</span>
         </div>
       </div>

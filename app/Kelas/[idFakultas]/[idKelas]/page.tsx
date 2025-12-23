@@ -1,45 +1,3 @@
-<<<<<<< HEAD:app/Kelas/[idKelas]/page.tsx
-'use client';
-
-import { useState, useEffect, use } from 'react';
-import Sidebar from '../../components/Kelas2/sidebar';
-import MateriCard from '../../components/Kelas2/Materi';
-import TugasCard from '../../components/Kelas2/Tugas';
-import { Search, Bell } from 'lucide-react';
-import Image from 'next/image';
-
-export default function HalamanKelasDinamis({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const id = resolvedParams.id; 
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [kelasData, setKelasData] = useState<any>(null);
-  const [userData, setUserData] = useState<any>(null); 
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // GANTI http://localhost:5000 dengan URL/Port Backend Express kamu
-        const response = await fetch(`http://localhost:5000/api/kelas/${id}`);
-        
-        if (!response.ok) throw new Error("Gagal mengambil data kelas");
-        
-        const json = await response.json();
-        setKelasData(json.data); // json.data berasal dari res.status(200).json({ data })
-
-        // Ambil data User (Sesuaikan endpointnya)
-        const userRes = await fetch('http://localhost:5000/api/profile');
-        if (userRes.ok) {
-          const userJson = await userRes.json();
-          setUserData(userJson.data); 
-        }
-      } catch (error) {
-        console.error("Fetch error:", error);
-      } finally {
-        setLoading(false);
-      }
-=======
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Search, Bell, ChevronDown } from "lucide-react";
@@ -78,6 +36,7 @@ interface TugasItemDB {
 interface KelasDataDB {
   id_Kelas: number;
   nama_kelas: string;
+  deskripsi?: string;
   Materi: MateriItemDB[];
   Tugas: TugasItemDB[];
 }
@@ -85,7 +44,6 @@ interface KelasDataDB {
 export default async function HalamanKelasDinamis({
   params,
 }: HalamanKelasDinamisProps) {
-  // ✅ FIX UTAMA (WAJIB di Next.js 15)
   const { idFakultas, idKelas } = await params;
 
   const id = Number(idKelas);
@@ -96,6 +54,7 @@ export default async function HalamanKelasDinamis({
     .select(`
       id_Kelas,
       nama_kelas,
+      deskripsi,
       Materi (
         id_Materi,
         judul_materi,
@@ -149,16 +108,9 @@ export default async function HalamanKelasDinamis({
         item.thumbnail_url ||
         "https://placehold.co/200x112/E0E0E0/B0B0B0",
       tags: dynamicTags,
->>>>>>> 9cb69517625a7a3dd8d52d7a4e46047a5a8eb4a7:app/Kelas/[idFakultas]/[idKelas]/page.tsx
     };
+  });
 
-<<<<<<< HEAD:app/Kelas/[idKelas]/page.tsx
-    if (id) fetchData();
-  }, [id]);
-
-  if (loading) return <div className="p-10 text-center italic text-gray-500">Memuat data kelas...</div>;
-  if (!kelasData) return <div className="p-10 text-center">Kelas tidak ditemukan.</div>;
-=======
   const tugasData: TugasCardProps[] = (kelasData.Tugas || []).map((item) => ({
     id: String(item.id_Tugas),
     title: item.judul_tugas,
@@ -167,33 +119,14 @@ export default async function HalamanKelasDinamis({
       | "TELAH"
       | "BELUM",
   }));
->>>>>>> 9cb69517625a7a3dd8d52d7a4e46047a5a8eb4a7:app/Kelas/[idFakultas]/[idKelas]/page.tsx
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <Sidebar />
-<<<<<<< HEAD:app/Kelas/[idKelas]/page.tsx
-      <div className="flex-1 ml-64">
-        <header className="flex justify-between items-center p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
-          <div>
-            <p className="text-sm text-gray-500 font-medium">Hai, {userData?.nama || "Pelajar"}!</p>
-            <h1 className="text-2xl font-bold text-gray-900">{kelasData.nama_kelas}</h1>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <input 
-                type="search" 
-                placeholder="Cari materi..." 
-                className="border rounded-full py-2 px-4 pl-10 text-sm w-72 focus:outline-none"
-                onChange={(e) => setSearchTerm(e.target.value)}
-=======
 
       <div className="flex-1 ml-64">
         <header className="flex justify-between items-center p-6 border-b border-gray-200 bg-white">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {kelasData.nama_kelas}
-          </h1>
+          <h1 className="text-2xl font-semibold text-gray-900">{kelasData.nama_kelas}</h1>
 
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -202,59 +135,8 @@ export default async function HalamanKelasDinamis({
                 placeholder="Search for Trainings"
                 className="border rounded-full py-2 px-4 pl-10 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <Search
-                size={16}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
->>>>>>> 9cb69517625a7a3dd8d52d7a4e46047a5a8eb4a7:app/Kelas/[idFakultas]/[idKelas]/page.tsx
-              />
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
-<<<<<<< HEAD:app/Kelas/[idKelas]/page.tsx
-            <button className="text-gray-500"><Bell size={22} /></button>
-            <Image 
-              src={userData?.photo_url || "https://placehold.co/32x32"} 
-              alt="Avatar" width={32} height={32} className="rounded-full" 
-            />
-          </div>
-        </header>
-
-        <main className="p-6">
-          <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-            <p className="mb-4 text-gray-600">{kelasData.deskripsi}</p>
-            
-            <div className="flex gap-8">
-              {/* SEKSI MATERI */}
-              <div className="flex-1 space-y-4">
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Materials</h3>
-                {kelasData.Materi?.filter((m: any) => m.judul_materi.toLowerCase().includes(searchTerm.toLowerCase()))
-                  .map((materi: any) => (
-                    <MateriCard 
-                      key={materi.id_Materi}
-                      id={String(materi.id_Materi)}
-                      title={materi.judul_materi}
-                      date={materi.Tanggal_tayang}
-                      thumbnailUrl={materi.thumbnail_url || 'https://placehold.co/200x112'}
-                      tags={[materi.tipe_konten?.toUpperCase() || 'MATERI']}
-                    />
-                ))}
-              </div>
-
-              {/* SEKSI TUGAS */}
-              <div className="w-80 space-y-4 border-l pl-8">
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Tugas</h3>
-                {kelasData.Tugas?.map((tugas: any) => (
-                  <TugasCard 
-                    key={tugas.id_Tugas} 
-                    id={String(tugas.id_Tugas)}
-                    title={tugas.judul_tugas} 
-                    dueDate={tugas.tenggat_waktu} 
-                    status={tugas.status === 'TELAH' ? 'TELAH' : 'BELUM'} 
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </main>
-=======
 
             <button className="flex items-center gap-2 text-sm font-medium text-gray-600 border rounded-full py-2 px-4 hover:bg-gray-100 transition">
               Enrollment Status
@@ -282,13 +164,9 @@ export default async function HalamanKelasDinamis({
             <h2 className="text-2xl font-semibold mb-5">Materials</h2>
             <div className="space-y-5">
               {materiData.length > 0 ? (
-                materiData.map((materi) => (
-                  <MateriCard key={materi.id} {...materi} />
-                ))
+                materiData.map((materi) => <MateriCard key={materi.id} {...materi} />)
               ) : (
-                <p className="text-gray-500">
-                  Belum ada materi untuk kelas ini.
-                </p>
+                <p className="text-gray-500">Belum ada materi untuk kelas ini.</p>
               )}
             </div>
           </section>
@@ -298,13 +176,9 @@ export default async function HalamanKelasDinamis({
               <h2 className="text-2xl font-semibold mb-5">Tugas</h2>
               <div className="flex flex-col gap-4">
                 {tugasData.length > 0 ? (
-                  tugasData.map((tugas) => (
-                    <TugasCard key={tugas.id} {...tugas} />
-                  ))
+                  tugasData.map((tugas) => <TugasCard key={tugas.id} {...tugas} />)
                 ) : (
-                  <p className="text-gray-500 text-sm">
-                    Tidak ada tugas aktif.
-                  </p>
+                  <p className="text-gray-500 text-sm">Tidak ada tugas aktif.</p>
                 )}
               </div>
             </div>
@@ -312,11 +186,8 @@ export default async function HalamanKelasDinamis({
         </div>
 
         <footer className="text-center p-6 border-t border-gray-200 mt-10">
-          <p className="text-sm text-gray-500">
-            © Copyright 2025, Geniuz. All Rights Reserved
-          </p>
+          <p className="text-sm text-gray-500">© Copyright 2025, Geniuz. All Rights Reserved</p>
         </footer>
->>>>>>> 9cb69517625a7a3dd8d52d7a4e46047a5a8eb4a7:app/Kelas/[idFakultas]/[idKelas]/page.tsx
       </div>
     </div>
   );

@@ -31,7 +31,11 @@ export const listAdminTugas = async (req, res) => {
       .order('tanggal_selesai', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    if (id_Kelas) q = q.eq('id_Kelas', id_Kelas)
+    if (id_Kelas) {
+      const idNum = Number(id_Kelas)
+      const idStr = String(id_Kelas)
+      q = q.or(`id_Kelas.eq.${idNum},id_Kelas.eq.${idStr}`)
+    }
     if (status) q = q.eq('status', status)
 
     if (search) {
@@ -42,8 +46,14 @@ export const listAdminTugas = async (req, res) => {
     const { data, error, count } = await q
     if (error) return res.status(500).json({ error: error.message })
 
+    const idNum = id_Kelas ? Number(id_Kelas) : null
+    const idStr = id_Kelas ? String(id_Kelas) : null
+    const filtered = id_Kelas
+      ? (data || []).filter(t => Number(t.id_Kelas) === idNum || String(t.id_Kelas) === idStr)
+      : data
+
     return res.json({
-      data,
+      data: filtered,
       meta: {
         page,
         limit,

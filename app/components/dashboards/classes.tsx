@@ -9,16 +9,29 @@ interface Kelas {
   deskripsi: string | null;
   nama_fakultas: string | null;
   nama_mentor: string | null;
+  Fakultas?: { nama_fakultas?: string | null };
+  Mentor?: { nama_mentor?: string | null };
 }
 
 export default function DashboardClasses() {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
   const [data, setData] = useState<Kelas[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchLatest = async () => {
-    const res = await fetch("/api/kelas?page=1&limit=5");
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    const res = await fetch(`${backendUrl}/api/admin/kelas?page=1&limit=5`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     const json = await res.json();
-    if (res.ok) setData(json.data);
+    if (res.ok) {
+      const normalized = (json.data || []).map((row: Kelas) => ({
+        ...row,
+        nama_fakultas: row.nama_fakultas ?? row.Fakultas?.nama_fakultas ?? null,
+        nama_mentor: row.nama_mentor ?? row.Mentor?.nama_mentor ?? null,
+      }));
+      setData(normalized);
+    }
     setLoading(false);
   };
 

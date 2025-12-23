@@ -186,9 +186,7 @@ export default async function HalamanKelasDinamis({
         </div>
 
         <footer className="text-center p-6 border-t border-gray-200 mt-10">
-          <p className="text-sm text-gray-500">
-            © Copyright 2025, Geniuz. All Rights Reserved
-          </p>
+          <p className="text-sm text-gray-500">© Copyright 2025, Geniuz. All Rights Reserved</p>
         </footer>
       </div>
     </div>

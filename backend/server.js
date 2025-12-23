@@ -23,6 +23,7 @@ import adminKelasRoutes from './routes/adminKelas.js'
 import adminMateriRoutes from './routes/adminMateri.js'
 import adminTugasRoutes from './routes/adminTugas.js'
 import adminSiswaRoutes from './routes/adminSiswa.js'
+import adminAnalyticsRoutes from './routes/adminAnalytics.js'
 
 dotenv.config()
 
@@ -52,14 +53,14 @@ app.use('/api/admin/kelas', adminKelasRoutes)
 app.use('/api/admin/materi', adminMateriRoutes)
 app.use('/api/admin/tugas', adminTugasRoutes)
 app.use('/api/admin/siswa', adminSiswaRoutes)
-// let more specific /api/admin/* routes resolve before the generic /api/admin/:id
 app.use('/api/admin', adminRoutes)
+app.use('/api/admin/analytics', adminAnalyticsRoutes)
 
 app.listen(process.env.PORT || 5000, () => {
   console.log(`Backend ready on http://localhost:${process.env.PORT || 5000}`)
 })
 
 app.use(cors({
-  origin: 'http://localhost:3000', // Izinkan frontend kamu
+  origin: 'http://localhost:3000',
   credentials: true
 }));

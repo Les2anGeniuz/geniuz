@@ -45,7 +45,6 @@ app.use('/api/pengumpulan', pengumpulanTugasRoutes)
 app.use('/api/progress', progressRoutes)
 app.use('/api/mentor', mentorRoutes)
 app.use('/api/admin', adminAuthRoutes)
-app.use('/api/admin', adminRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/admin/fakultas', adminFakultasRoutes)
 app.use('/api/admin/mentor', adminMentorRoutes)
@@ -53,6 +52,8 @@ app.use('/api/admin/kelas', adminKelasRoutes)
 app.use('/api/admin/materi', adminMateriRoutes)
 app.use('/api/admin/tugas', adminTugasRoutes)
 app.use('/api/admin/siswa', adminSiswaRoutes)
+// let more specific /api/admin/* routes resolve before the generic /api/admin/:id
+app.use('/api/admin', adminRoutes)
 
 app.listen(process.env.PORT || 5000, () => {
   console.log(`Backend ready on http://localhost:${process.env.PORT || 5000}`)

@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../../components/Kelas2/sidebar';
 import MateriCard from '../../components/Kelas2/Materi';
 import TugasCard from '../../components/Kelas2/Tugas';
 import { Search, Bell } from 'lucide-react';
 import Image from 'next/image';
 
-export default function HalamanKelasDinamis({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const id = resolvedParams.id; 
+export default function HalamanKelasDinamis({ params }: { params: { idKelas: string } }) {
+  const id = params.idKelas;
+  const idNum = Number(id);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [kelasData, setKelasData] = useState<any>(null);
@@ -20,15 +20,24 @@ export default function HalamanKelasDinamis({ params }: { params: Promise<{ id: 
     const fetchData = async () => {
       try {
         // GANTI http://localhost:5000 dengan URL/Port Backend Express kamu
-        const response = await fetch(`http://localhost:5000/api/kelas/${id}`);
+        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+        const response = await fetch(`${baseUrl}/api/kelas/${idNum || id}`);
         
         if (!response.ok) throw new Error("Gagal mengambil data kelas");
         
         const json = await response.json();
-        setKelasData(json.data); // json.data berasal dari res.status(200).json({ data })
+        const data = json.data;
+        const safeId = Number(idNum || data?.id_Kelas || id);
+        const materi = Array.isArray(data?.Materi)
+          ? data.Materi.filter((m: any) => Number(m.id_Kelas) === safeId)
+          : [];
+        const tugas = Array.isArray(data?.Tugas)
+          ? data.Tugas.filter((t: any) => Number(t.id_Kelas) === safeId)
+          : [];
+        setKelasData({ ...data, Materi: materi, Tugas: tugas });
 
         // Ambil data User (Sesuaikan endpointnya)
-        const userRes = await fetch('http://localhost:5000/api/profile');
+        const userRes = await fetch(`${baseUrl}/api/profile`);
         if (userRes.ok) {
           const userJson = await userRes.json();
           setUserData(userJson.data); 

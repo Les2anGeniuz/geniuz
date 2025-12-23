@@ -207,6 +207,7 @@ interface TugasItemDB {
 interface KelasDataDB {
   id_Kelas: number;
   nama_kelas: string;
+  deskripsi?: string;
   Materi: MateriItemDB[];
   Tugas: TugasItemDB[];
 }
@@ -214,7 +215,6 @@ interface KelasDataDB {
 export default async function HalamanKelasDinamis({
   params,
 }: HalamanKelasDinamisProps) {
-  // ✅ FIX UTAMA (WAJIB di Next.js 15)
   const { idFakultas, idKelas } = await params;
 
   const id = Number(idKelas);
@@ -225,6 +225,7 @@ export default async function HalamanKelasDinamis({
     .select(`
       id_Kelas,
       nama_kelas,
+      deskripsi,
       Materi (
         id_Materi,
         judul_materi,
@@ -296,9 +297,7 @@ export default async function HalamanKelasDinamis({
 
       <div className="flex-1 ml-64">
         <header className="flex justify-between items-center p-6 border-b border-gray-200 bg-white">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {kelasData.nama_kelas}
-          </h1>
+          <h1 className="text-2xl font-semibold text-gray-900">{kelasData.nama_kelas}</h1>
 
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -307,10 +306,7 @@ export default async function HalamanKelasDinamis({
                 placeholder="Search for Trainings"
                 className="border rounded-full py-2 px-4 pl-10 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <Search
-                size={16}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
 
             <button className="flex items-center gap-2 text-sm font-medium text-gray-600 border rounded-full py-2 px-4 hover:bg-gray-100 transition">
@@ -339,13 +335,9 @@ export default async function HalamanKelasDinamis({
             <h2 className="text-2xl font-semibold mb-5">Materials</h2>
             <div className="space-y-5">
               {materiData.length > 0 ? (
-                materiData.map((materi) => (
-                  <MateriCard key={materi.id} {...materi} />
-                ))
+                materiData.map((materi) => <MateriCard key={materi.id} {...materi} />)
               ) : (
-                <p className="text-gray-500">
-                  Belum ada materi untuk kelas ini.
-                </p>
+                <p className="text-gray-500">Belum ada materi untuk kelas ini.</p>
               )}
             </div>
           </section>
@@ -355,13 +347,9 @@ export default async function HalamanKelasDinamis({
               <h2 className="text-2xl font-semibold mb-5">Tugas</h2>
               <div className="flex flex-col gap-4">
                 {tugasData.length > 0 ? (
-                  tugasData.map((tugas) => (
-                    <TugasCard key={tugas.id} {...tugas} />
-                  ))
+                  tugasData.map((tugas) => <TugasCard key={tugas.id} {...tugas} />)
                 ) : (
-                  <p className="text-gray-500 text-sm">
-                    Tidak ada tugas aktif.
-                  </p>
+                  <p className="text-gray-500 text-sm">Tidak ada tugas aktif.</p>
                 )}
               </div>
             </div>
@@ -381,4 +369,3 @@ export default async function HalamanKelasDinamis({
 }
 =======
 }
->>>>>>> 9cb69517625a7a3dd8d52d7a4e46047a5a8eb4a7

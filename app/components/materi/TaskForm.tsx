@@ -11,6 +11,7 @@ export default function TaskForm({
   kelasId?: string | null;
   modules: { id: string; title: string }[];
 }) {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
   const [title, setTitle] = useState("");
   const [moduleId, setModuleId] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -22,18 +23,22 @@ export default function TaskForm({
     setLoading(true);
     try {
       const payload = {
-        id_Kelas: kelasId,
+        id_Kelas: Number(kelasId),
         judul_tugas: title,
-        id_Materi: moduleId || null,
+        id_Materi: moduleId ? Number(moduleId) : null,
         tanggal_mulai: startDate || null,
         tanggal_selesai: endDate || null,
       };
 
-      const res = await fetch("/api/tugas", {
+      const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+
+      const res = await fetch(`${backendUrl}/api/admin/tugas`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
-        credentials: "same-origin",
       });
 
       const json = await res.json();

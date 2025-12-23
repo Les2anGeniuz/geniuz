@@ -30,6 +30,12 @@ interface Task {
 }
 
 export default function AdminMateri() {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const authHeaders = () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const [classes, setClasses] = useState<Kelas[]>([]);
   const [selected, setSelected] = useState<Kelas | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
@@ -42,7 +48,9 @@ export default function AdminMateri() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(`/api/kelas?limit=50`, { credentials: "same-origin" });
+        const res = await fetch(`${backendUrl}/api/admin/kelas?limit=50`, {
+          headers: { ...authHeaders() },
+        });
         const json = await res.json();
         if (!res.ok) throw new Error(json?.error || "Gagal ambil kelas");
         setClasses(json.data || []);
@@ -51,7 +59,7 @@ export default function AdminMateri() {
       }
     };
     load();
-  }, []);
+  }, [backendUrl]);
 
   // -----------------------------------------------------
   // Load modules & tasks ketika kelas dipilih
@@ -65,9 +73,15 @@ export default function AdminMateri() {
 
     const loadDetails = async () => {
       try {
+        const kelasId = selected.id_Kelas ?? selected.id
+
         const [mRes, tRes] = await Promise.all([
-          fetch(`/api/materi?kelas=${selected.id_Kelas ?? selected.id}`, { credentials: "same-origin" }),
-          fetch(`/api/tugas?kelas=${selected.id_Kelas ?? selected.id}`, { credentials: "same-origin" }),
+          fetch(`${backendUrl}/api/admin/materi?id_Kelas=${kelasId}`, {
+            headers: { ...authHeaders() },
+          }),
+          fetch(`${backendUrl}/api/admin/tugas?id_Kelas=${kelasId}`, {
+            headers: { ...authHeaders() },
+          }),
         ]);
 
         const mJson = await mRes.json();
@@ -88,7 +102,7 @@ export default function AdminMateri() {
     };
 
     loadDetails();
-  }, [selected]);
+  }, [backendUrl, selected]);
 
   const handleAddTask = (t: Task) => {
     setTasks((prev) => [t, ...prev]);

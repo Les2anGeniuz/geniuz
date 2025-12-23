@@ -14,6 +14,10 @@ interface Kelas {
   deskripsi: string | null;
   nama_fakultas: string | null;
   nama_mentor: string | null;
+  id_Fakultas?: number;
+  id_Mentor?: number;
+  Fakultas?: { nama_fakultas?: string | null };
+  Mentor?: { nama_mentor?: string | null };
 }
 
 interface Fakultas {
@@ -27,6 +31,20 @@ interface Mentor {
 }
 
 export default function KelasPage() {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const authHeaders = (): HeadersInit => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    return token ? { Authorization: `Bearer ${token}` } : {} as HeadersInit;
+  };
+
+  const ensureToken = () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    if (!token && typeof window !== "undefined") {
+      window.location.href = "/login/admin";
+    }
+    return token;
+  };
+
   const [kelas, setKelas] = useState<Kelas[]>([]);
   const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1, limit: 15 });
   const [search, setSearch] = useState("");
@@ -46,28 +64,100 @@ export default function KelasPage() {
   const page = meta.page;
 
   const fetchData = useCallback(async () => {
+    const token = ensureToken();
+    if (!token) return;
+
     const params = new URLSearchParams({ page: String(page), limit: "15" });
     if (search) params.set("search", search);
 
-    const res = await fetch(`/api/kelas?${params.toString()}`);
-    const json = await res.json();
+    try {
+      const url = `${backendUrl}/api/admin/kelas?${params.toString()}`;
+      const res = await fetch(url, {
+        headers: { ...authHeaders() },
+      });
 
-    if (res.ok) {
-      setKelas(json.data);
-      setMeta(json.meta);
+      let json: any = {};
+      try {
+        json = await res.json();
+      } catch (_) {
+        json = {};
+      }
+
+      if (res.ok) {
+        const normalized = (json.data || []).map((row: Kelas) => ({
+          ...row,
+          nama_fakultas: row.nama_fakultas ?? row.Fakultas?.nama_fakultas ?? null,
+          nama_mentor: row.nama_mentor ?? row.Mentor?.nama_mentor ?? null,
+        }));
+        setKelas(normalized);
+        setMeta(json.meta || { total: 0, page: 1, totalPages: 1, limit: 15 });
+      } else {
+        console.error("Gagal fetch kelas", {
+          status: res.status,
+          statusText: res.statusText,
+          url,
+          body: json,
+        });
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("admin_token");
+          window.location.href = "/login/admin";
+        }
+      }
+    } catch (err) {
+      console.error("Fetch kelas exception", err);
     }
-  }, [page, search]);
+  }, [backendUrl, page, search]);
 
   const loadFakultas = async () => {
-    const res = await fetch("/api/fakultas");
-    const json = await res.json();
-    if (res.ok) setFakultas(json.data);
+    const token = ensureToken();
+    if (!token) return;
+    const url = `${backendUrl}/api/admin/fakultas`;
+    const res = await fetch(url, {
+      headers: { ...authHeaders() },
+    });
+    let json: any = {};
+    try {
+      json = await res.json();
+    } catch (_) {
+      json = {};
+    }
+
+    // backend returns { fakultas: [...] }
+    if (res.ok) setFakultas(json.data || json.fakultas || []);
+    else {
+      console.error("Gagal fetch fakultas", { status: res.status, statusText: res.statusText, url, body: json });
+      alert(json.error || "Gagal memuat fakultas");
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem("admin_token");
+        window.location.href = "/login/admin";
+      }
+    }
   };
 
   const loadMentor = async () => {
-    const res = await fetch("/api/mentor");
-    const json = await res.json();
-    if (res.ok) setMentor(json.data);
+    const token = ensureToken();
+    if (!token) return;
+    const url = `${backendUrl}/api/admin/mentor`;
+    const res = await fetch(url, {
+      headers: { ...authHeaders() },
+    });
+    let json: any = {};
+    try {
+      json = await res.json();
+    } catch (_) {
+      json = {};
+    }
+
+    // backend returns { mentor: [...] }
+    if (res.ok) setMentor(json.data || json.mentor || []);
+    else {
+      console.error("Gagal fetch mentor", { status: res.status, statusText: res.statusText, url, body: json });
+      alert(json.error || "Gagal memuat mentor");
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem("admin_token");
+        window.location.href = "/login/admin";
+      }
+    }
   };
 
   useEffect(() => {
@@ -90,8 +180,8 @@ export default function KelasPage() {
     setEditing(item);
     setNamaKelas(item.nama_kelas);
     setDeskripsi(item.deskripsi || "");
-    setIdFakultas("");
-    setIdMentor("");
+    setIdFakultas(item.id_Fakultas ? String(item.id_Fakultas) : "");
+    setIdMentor(item.id_Mentor ? String(item.id_Mentor) : "");
 
     loadFakultas();
     loadMentor();
@@ -101,25 +191,37 @@ export default function KelasPage() {
   const saveKelas = async () => {
     setLoading(true);
 
+    if (!id_Fakultas) {
+      setLoading(false);
+      alert("Fakultas wajib dipilih");
+      return;
+    }
+
     const body = {
       nama_kelas,
       deskripsi,
-      id_Fakultas: id_Fakultas || null,
+      id_Fakultas,
       id_Mentor: id_Mentor || null,
     };
+
+    const token = ensureToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
     let res;
 
     if (editing) {
-      res = await fetch(`/api/kelas/${editing.id_Kelas}`, {
+      res = await fetch(`${backendUrl}/api/admin/kelas/${editing.id_Kelas}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(body),
       });
     } else {
-      res = await fetch(`/api/kelas`, {
+      res = await fetch(`${backendUrl}/api/admin/kelas`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(body),
       });
     }
@@ -129,6 +231,9 @@ export default function KelasPage() {
     if (res.ok) {
       setModalOpen(false);
       fetchData();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || "Gagal menyimpan kelas");
     }
   };
 
@@ -136,19 +241,24 @@ export default function KelasPage() {
     if (!confirm(`Hapus kelas "${item.nama_kelas}"?`)) return;
 
     try {
-        const res = await fetch(`/api/kelas/${item.id_Kelas}`, { method: "DELETE" });
-        const json = await res.json();
+        const token = ensureToken();
+        if (!token) return;
+      const res = await fetch(`${backendUrl}/api/admin/kelas/${item.id_Kelas}`, {
+        method: "DELETE",
+        headers: { ...authHeaders() },
+      });
+      const json = await res.json();
 
-        if (!res.ok) {
+      if (!res.ok) {
             alert(json.error || "Gagal menghapus kelas");
-            return;
-        }
-        fetchData();
+        return;
+      }
+      fetchData();
     } catch (error) {
-        console.error("Gagal connect ke server", error);
-        alert("Terjadi kesalahan koneksi");
+      console.error("Gagal connect ke server", error);
+      alert("Terjadi kesalahan koneksi");
     }
-};
+  };
 
   return (
     <div className="flex min-h-screen bg-[#F4F6F9]">

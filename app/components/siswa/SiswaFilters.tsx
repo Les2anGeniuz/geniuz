@@ -4,8 +4,8 @@ import React from "react";
 interface Props {
   search: string;
   setSearch: (val: string) => void;
-  status: "all" | "aktif" | "tidak_aktif";
-  setStatus: (val: "all" | "aktif" | "tidak_aktif") => void;
+  status: "all" | "aktif" | "pending" | "ditolak";
+  setStatus: (val: "all" | "aktif" | "pending" | "ditolak") => void;
 }
 
 const SiswaFilters: React.FC<Props> = ({
@@ -25,7 +25,7 @@ const SiswaFilters: React.FC<Props> = ({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search courses or instructors"
+            placeholder="Cari nama atau email"
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
           />
         </div>
@@ -35,13 +35,14 @@ const SiswaFilters: React.FC<Props> = ({
           <select
             value={status}
             onChange={(e) =>
-              setStatus(e.target.value as "all" | "aktif" | "tidak_aktif")
+              setStatus(e.target.value as "all" | "aktif" | "pending" | "ditolak")
             }
             className="w-full bg-[#E5E7EB] text-xs rounded-full px-3 py-2 outline-none text-gray-600"
           >
-            <option value="all">All status</option>
+            <option value="all">Semua status</option>
             <option value="aktif">Aktif</option>
-            <option value="tidak_aktif">Tidak aktif</option>
+            <option value="pending">Pending</option>
+            <option value="ditolak">Ditolak</option>
           </select>
         </div>
       </div>

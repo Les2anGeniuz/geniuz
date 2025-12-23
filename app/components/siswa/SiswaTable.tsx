@@ -4,9 +4,9 @@ interface StudentRow {
     id_user: string;
     nama_lengkap: string;
     email: string;
-    nama_kelas?: string | null;
-    tanggal_masuk?: string | null;
-    terakhir_aktif?: string | null;
+    fakultas?: string | null;
+    tanggal_pendaftaran?: string | null;
+    status?: string | null;
 }
 
 interface Props {
@@ -21,9 +21,9 @@ const SiswaTable: React.FC<Props> = ({ data }) => {
                     <thead className="sticky top-0 z-10 bg-[#002D5B]">
                         <tr className="bg-[#002D5B] text-white text-[14px]">
                             <th className="py-3 px-4 text-left font-semibold">Siswa</th>
-                            <th className="py-3 px-4 text-left font-semibold">Kelas</th>
-                            <th className="py-3 px-4 text-right font-semibold">Tanggal Masuk</th>
-                            <th className="py-3 px-4 text-right font-semibold">Terakhir Aktif</th>
+                            <th className="py-3 px-4 text-left font-semibold">Fakultas</th>
+                            <th className="py-3 px-4 text-right font-semibold">Tanggal Pendaftaran</th>
+                            <th className="py-3 px-4 text-right font-semibold">Status</th>
                         </tr>
                     </thead>
 
@@ -42,7 +42,7 @@ const SiswaTable: React.FC<Props> = ({ data }) => {
                         <tbody>
                             {data.map((row) => (
                                 <tr
-                                    key={`${row.id_user}-${row.nama_kelas ?? "none"}`}
+                                    key={row.id_user}
                                     className="hover:bg-gray-50 transition"
                                 >
                                     <td className="py-4 px-4">
@@ -57,26 +57,20 @@ const SiswaTable: React.FC<Props> = ({ data }) => {
                                         </div>
                                     </td>
 
-                                    <td className="py-4 px-4">
-                                        {row.nama_kelas ? (
-                                            <span className="inline-block px-3 py-1 rounded-full border border-gray-300 text-[12px] font-medium text-[#002D5B] bg-gray-50 whitespace-nowrap">
-                                                {row.nama_kelas}
-                                            </span>
-                                        ) : (
-                                            <span className="text-[12px] text-gray-400">-</span>
-                                        )}
+                                    <td className="py-4 px-4 align-top text-[13px] text-gray-800 font-semibold">
+                                        {row.fakultas || "-"}
                                     </td>
 
                                     <td className="py-4 px-4 text-right text-[13px] text-gray-700">
-                                        {row.tanggal_masuk
-                                            ? new Date(row.tanggal_masuk).toLocaleDateString("id-ID")
+                                        {row.tanggal_pendaftaran
+                                            ? new Date(row.tanggal_pendaftaran).toLocaleDateString("id-ID")
                                             : "-"}
                                     </td>
 
-                                    <td className="py-4 px-4 text-right text-[13px] text-gray-700">
-                                        {row.terakhir_aktif
-                                            ? new Date(row.terakhir_aktif).toLocaleDateString("id-ID")
-                                            : "-"}
+                                    <td className="py-4 px-4 text-right text-[13px]">
+                                        <span className={`px-3 py-1 rounded-full border text-[12px] font-semibold ${row.status === "aktif" ? "border-green-500 text-green-700 bg-green-50" : "border-gray-300 text-gray-600 bg-gray-50"}`}>
+                                            {row.status ? row.status.toUpperCase() : "-"}
+                                        </span>
                                     </td>
                                 </tr>
                             ))}

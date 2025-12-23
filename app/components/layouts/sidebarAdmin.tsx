@@ -12,8 +12,11 @@ import {
   UserLinear,
   Logout3Linear,
 } from "solar-icon-set";
+<<<<<<< HEAD
 // Pastikan path ini sesuai dengan struktur project Anda, biasanya @/lib/... atau ../../lib/...
 import { supabase } from "@/lib/supabaseClient"; 
+=======
+>>>>>>> e731e2d87323f2ba431c863fec1f451ddd157e41
 
 interface UserData {
   name: string;
@@ -25,7 +28,44 @@ const SidebarAdmin = () => {
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
 
+<<<<<<< HEAD
   // Menu untuk Admin
+=======
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+
+        if (!token) {
+          setUser(null);
+          return;
+        }
+
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+        const res = await fetch(`${backendUrl}/api/admin/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          setUser(null);
+          return;
+        }
+
+        const data = await res.json();
+        setUser({ name: data.nama ?? "Admin", email: data.email ?? "" });
+      } catch (err) {
+        console.error("Error fetching admin profile", err);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+>>>>>>> e731e2d87323f2ba431c863fec1f451ddd157e41
   const menuOverview = [
     { name: "Dashboard", icon: Home2Linear, href: "/admin/dashboard" },
     { name: "Analytics", icon: ChartSquareLinear, href: "/admin/analytics" },
@@ -154,6 +194,7 @@ const SidebarAdmin = () => {
           </ul>
         </div>
       </nav>
+<<<<<<< HEAD
 
       {/* Logout */}
       <div className="px-6 py-4 border-t border-gray-200">
@@ -165,6 +206,8 @@ const SidebarAdmin = () => {
           <span className="font-medium">Logout</span>
         </button>
       </div>
+=======
+>>>>>>> e731e2d87323f2ba431c863fec1f451ddd157e41
     </aside>
   );
 };

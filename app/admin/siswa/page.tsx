@@ -12,11 +12,9 @@ export interface StudentRow {
   id_user: string;
   nama_lengkap: string;
   email: string;
-  nama_kelas: string | null;
-  tanggal_masuk: string;     // ISO date string
-  terakhir_aktif: string | null;
-  progress: number | null;
-  status: string;            // "aktif" | "tidak_aktif" | etc
+  fakultas: string | null;
+  tanggal_pendaftaran: string | null;
+  status: string | null;
 }
 
 interface Meta {
@@ -34,6 +32,12 @@ interface Stats {
 }
 
 export default function SiswaPage() {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const authHeaders = (): HeadersInit => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const [data, setData] = useState<StudentRow[]>([]);
   const [meta, setMeta] = useState<Meta>({
     total: 0,
@@ -42,6 +46,7 @@ export default function SiswaPage() {
     limit: 15,
   });
 
+  // Stats dihapus dari UI, tapi struktur state dibiarkan jika nanti ingin dipakai lagi.
   const [stats, setStats] = useState<Stats>({
     total: 0,
     aktif: 0,
@@ -50,34 +55,59 @@ export default function SiswaPage() {
   });
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<"all" | "aktif" | "tidak_aktif">("all");
+  const [status, setStatus] = useState<"all" | "aktif" | "pending" | "ditolak">("all");
   const page = meta.page;
 
   const fetchData = async () => {
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(meta.limit),
-    });
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(meta.limit),
+      });
 
-    if (search) params.set("search", search);
-    if (status !== "all") params.set("status", status);
+      if (search) params.set("search", search);
+      if (status !== "all") params.set("status", status);
 
-    const res = await fetch(`/api/siswa?${params.toString()}`);
-    const json = await res.json();
+      const res = await fetch(`${backendUrl}/api/admin/siswa?${params.toString()}`, {
+        headers: { ...authHeaders() },
+      });
 
-    if (res.ok) {
-      setData(json.data);
-      setMeta(json.meta);
-      setStats(json.stats);
-    } else {
-      console.error(json);
+      let json: any = {};
+      try {
+        json = await res.json();
+      } catch (e) {
+        console.error("Failed to parse JSON", e);
+      }
+
+      if (res.ok) {
+        const incomingMeta = json.meta || {};
+        setData(json.data || []);
+        setMeta({
+          total: incomingMeta.total ?? 0,
+          page: incomingMeta.page ?? 1,
+          totalPages: incomingMeta.totalPages ?? incomingMeta.totalPage ?? 1,
+          limit: incomingMeta.limit ?? meta.limit,
+        });
+
+        const safeStats = json.stats || {
+          total: incomingMeta.total ?? 0,
+          aktif: incomingMeta.total ?? 0,
+          avgProgress: 0,
+          newRegistrations: 0,
+        };
+        setStats(safeStats);
+      } else {
+        console.error({ status: res.status, statusText: res.statusText, body: json });
+      }
+    } catch (err) {
+      console.error("fetch siswa failed", err);
     }
   };
 
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, status, page]);
+  }, [backendUrl, search, status, page]);
 
   return (
     <div className="flex min-h-screen bg-[#F4F6F9]">
@@ -107,9 +137,6 @@ export default function SiswaPage() {
         <div className="flex-1 px-10 pb-10 pt-4 overflow-y-auto">
           <div className="max-w-[1400px] mx-auto space-y-6">
             
-            {/* STATS */}
-              <SiswaStats stats={stats} />
-
             {/* CARD UTAMA */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
 

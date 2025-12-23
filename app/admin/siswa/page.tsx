@@ -13,10 +13,10 @@ export interface StudentRow {
   nama_lengkap: string;
   email: string;
   nama_kelas: string | null;
-  tanggal_masuk: string;     // ISO date string
+  tanggal_masuk: string;
   terakhir_aktif: string | null;
   progress: number | null;
-  status: string;            // "aktif" | "tidak_aktif" | etc
+  status: string;
 }
 
 interface Meta {

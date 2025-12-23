@@ -12,7 +12,6 @@ import {
   UserLinear,
   Logout3Linear,
 } from "solar-icon-set";
-import { supabase } from "../../../lib/supabaseClient";
 
 interface UserData {
   name: string;
@@ -25,14 +24,18 @@ const SidebarAdmin = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data, error } = await supabase
-        .from("User")
-        .select("nama_lengkap, email")
-        .limit(1)
-        .single();
+      try {
+        const res = await fetch("/api/admin/me", { credentials: "include" });
 
-      if (!error && data) {
-        setUser({ name: data.nama_lengkap, email: data.email });
+        if (!res.ok) {
+          setUser(null);
+          return;
+        }
+
+        const data = await res.json();
+        setUser({ name: data.nama ?? "Admin", email: data.email ?? "" });
+      } catch (err) {
+        console.error("Error fetching admin profile", err);
       }
     };
 
@@ -128,17 +131,6 @@ const SidebarAdmin = () => {
           </ul>
         </div>
       </nav>
-
-      {/* Logout */}
-      <div className="px-6 py-4 border-t border-gray-200">
-        <Link
-          href="/logout"
-          className="flex items-center space-x-2 text-[#0A4378] hover:text-red-500 transition-colors"
-        >
-          <Logout3Linear size={18} />
-          <span className="font-medium">Logout</span>
-        </Link>
-      </div>
     </aside>
   );
 };

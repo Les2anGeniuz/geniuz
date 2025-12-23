@@ -57,3 +57,8 @@ app.use('/api/admin/siswa', adminSiswaRoutes)
 app.listen(process.env.PORT || 5000, () => {
   console.log(`Backend ready on http://localhost:${process.env.PORT || 5000}`)
 })
+
+app.use(cors({
+  origin: 'http://localhost:3000', // Izinkan frontend kamu
+  credentials: true
+}));

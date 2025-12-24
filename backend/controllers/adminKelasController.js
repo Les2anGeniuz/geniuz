@@ -136,6 +136,13 @@ export const updateAdminKelas = async (req, res) => {
 export const deleteAdminKelas = async (req, res) => {
   try {
     const { id } = req.params
+    // Delete dependent Tugas first (cascade manually)
+    const { error: tugasErr } = await supabaseAdmin
+      .from('Tugas')
+      .delete()
+      .eq('id_Kelas', id)
+
+    if (tugasErr) return res.status(400).json({ error: tugasErr.message })
 
     const { error } = await supabaseAdmin
       .from('Kelas')

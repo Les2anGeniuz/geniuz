@@ -25,10 +25,43 @@ const SidebarAdmin = () => {
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
 
-  // Menu untuk Admin
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+
+        if (!token) {
+          setUser(null);
+          return;
+        }
+
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+        const res = await fetch(`${backendUrl}/api/admin/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          setUser(null);
+          return;
+        }
+
+        const data = await res.json();
+        setUser({ name: data.nama ?? "Admin", email: data.email ?? "" });
+      } catch (err) {
+        console.error("Error fetching admin profile", err);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
   const menuOverview = [
     { name: "Dashboard", icon: Home2Linear, href: "/admin/dashboard" },
-    { name: "Analytics", icon: ChartSquareLinear, href: "/admin/analytics" },
+    // { name: "Analytics", icon: ChartSquareLinear, href: "/admin/analytics" },
   ];
 
   const menuManagement = [

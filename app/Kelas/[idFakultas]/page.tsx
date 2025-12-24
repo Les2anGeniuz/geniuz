@@ -1,3 +1,4 @@
+//path file ini : geniuz/app/Kelas/[idFakultas]/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -53,6 +54,10 @@ export default function HalamanKelasDinamis({
   if (!fakultasData) {
     return <div className="p-10 text-center">Data tidak ditemukan.</div>;
   }
+
+  const filteredMateri = fakultasData.Materi?.filter((m: any) =>
+      m.judul_materi.toLowerCase().includes(searchTerm.toLowerCase())
+    ) || [];
 
   return (
     <div className="flex bg-gray-50 min-h-screen">

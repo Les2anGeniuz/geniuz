@@ -35,17 +35,6 @@ const SiswaStats: React.FC<Props> = ({ stats }) => {
         <p className="text-[11px] text-gray-400 mt-1">+ 8% bulan ini (dummy)</p>
       </div>
 
-      {/* Rata-rata Progres */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-        <p className="text-xs font-semibold text-gray-500 uppercase leading-tight">
-          Rata-Rata Progres
-        </p>
-        <p className="text-2xl font-bold mt-2">
-          {Math.round(stats.avgProgress)}%
-        </p>
-        <p className="text-[11px] text-gray-400 mt-1">+ 5% bulan ini (dummy)</p>
-      </div>
-
       {/* Pendaftaran Baru */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
         <p className="text-xs font-semibold text-gray-500 uppercase leading-tight">

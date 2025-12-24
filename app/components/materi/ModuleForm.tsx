@@ -11,6 +11,7 @@ export default function ModuleForm({
   onCreate: (m: any) => void;
   onCancel: () => void;
 }) {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [urutan, setUrutan] = useState<string | number>("");
@@ -20,17 +21,21 @@ export default function ModuleForm({
     if (!title) return alert("Judul modul diperlukan");
 
     const payload = {
-      id_Kelas: kelasId,
+      id_Kelas: Number(kelasId),
       judul_materi: title,
       deskripsi: description || null,
       urutan: urutan ? Number(urutan) : null,
     };
 
-    const res = await fetch("/api/materi", {
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+
+    const res = await fetch(`${backendUrl}/api/admin/materi`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(payload),
-      credentials: "same-origin",
     });
 
     const json = await res.json();
@@ -76,7 +81,7 @@ export default function ModuleForm({
             Batal
           </button>
 
-          <button className="bg-[#0A2A43] text-white px-5 py-3 rounded-xl hover:bg-[#0F3B66] transition">
+          <button onClick={submit} className="bg-[#0A2A43] text-white px-5 py-3 rounded-xl hover:bg-[#0F3B66] transition">
             Simpan
           </button>
         </div>

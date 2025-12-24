@@ -9,12 +9,13 @@ type DashProfile = {
   nama_lengkap?: string | null;
   nama_fakultas?: string | null;
   email?: string | null;
+  id_fakultas?: string | number | null; // Tambahan untuk navigasi
 };
 
 type KelasRow = {
-  id_Kelas?: string | number;
-  nama_kelas?: string;
-  deskripsi?: string;
+  id_Kelas: string | number;
+  nama_kelas: string;
+  id_Fakultas?: string | number; // Tambahan untuk navigasi
 };
 
 type DashKelasSayaRes = {
@@ -24,15 +25,12 @@ type DashKelasSayaRes = {
 type UserData = {
   name: string;
   fakultas: string;
-  classes: Array<{ label: string; slug: string }>;
+  classes: Array<{ label: string; idKelas: string | number; idFakultas: string | number }>;
 };
 
 const TOKEN_KEY = "access_token";
 const getToken = () => (typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY));
 const clearToken = () => typeof window !== "undefined" && localStorage.removeItem(TOKEN_KEY);
-
-const slugify = (s: string) =>
-  s.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
 
 const Sidebar: React.FC = () => {
   const [userData, setUserData] = useState<UserData>({ name: "", fakultas: "", classes: [] });
@@ -51,8 +49,6 @@ const Sidebar: React.FC = () => {
 
     const apiGet = async <T,>(path: string, token: string): Promise<T> => {
       const url = `${API_BASE}${path}`;
-      console.log("[Sidebar] FETCH:", url);
-
       const res = await fetch(url, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
@@ -65,11 +61,7 @@ const Sidebar: React.FC = () => {
         throw new Error("Unauthorized");
       }
 
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`Request gagal ${res.status}: ${text}`);
-      }
-
+      if (!res.ok) throw new Error(`Request gagal ${res.status}`);
       return (await res.json()) as T;
     };
 
@@ -89,15 +81,20 @@ const Sidebar: React.FC = () => {
 
         const name = profile?.nama_lengkap?.trim() || "User";
         const fakultas = profile?.nama_fakultas?.trim() || "-";
+        const idFakultasProfile = profile?.id_fakultas || "1";
 
         const kelasRows = Array.isArray(kelasSaya?.kelas_saya) ? kelasSaya.kelas_saya : [];
         const classes = kelasRows
           .map((k) => {
             const label = (k?.nama_kelas || "").trim();
             if (!label) return null;
-            return { label, slug: slugify(label) };
+            return { 
+              label, 
+              idKelas: k.id_Kelas, 
+              idFakultas: k.id_Fakultas || idFakultasProfile 
+            };
           })
-          .filter(Boolean) as Array<{ label: string; slug: string }>;
+          .filter(Boolean) as UserData['classes'];
 
         setUserData({ name, fakultas, classes });
       } catch (e) {
@@ -166,14 +163,18 @@ const Sidebar: React.FC = () => {
           <div className="ml-4 mb-3 font-bold text-[#064479] text-xs uppercase tracking-wider opacity-80">Kelas Saya</div>
           <ul className="flex flex-col gap-2">
             {userData.classes.length > 0 ? (
-              userData.classes.map((c, idx) => (
-                <li key={`${c.slug}-${idx}`}>
-                  <Link href={`/kelas/${c.slug}`} className={getLinkClass(`/kelas/${c.slug}`)}>
-                    <Image src="/course.svg" alt="Course" width={20} height={20} />
-                    <span className="truncate">{c.label}</span>
-                  </Link>
-                </li>
-              ))
+              userData.classes.map((c, idx) => {
+                // Link diarahkan ke folder dinamis [idFakultas]/[idKelas]
+                const hrefPath = `/Kelas/${c.idFakultas}/${c.idKelas}`;
+                return (
+                  <li key={`${c.idKelas}-${idx}`}>
+                    <Link href={hrefPath} className={getLinkClass(hrefPath)}>
+                      <Image src="/course.svg" alt="Course" width={20} height={20} className={pathname.startsWith(hrefPath) ? "brightness-0 invert" : ""} />
+                      <span className="truncate">{c.label}</span>
+                    </Link>
+                  </li>
+                );
+              })
             ) : (
               <li className="text-xs text-gray-400 italic ml-4">Belum ada kelas aktif.</li>
             )}

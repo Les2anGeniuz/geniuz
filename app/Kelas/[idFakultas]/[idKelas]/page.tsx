@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Search, Bell, ChevronDown, CheckCircle, Clock, ListFilter } from 'lucide-react';
 
-import Sidebar from '../../../components/Kelas2/sidebar';
+import Sidebar from '../../../components/dashboardLayout/sidebar';
 import MateriCard from '../../../components/Kelas2/Materi';
 import TugasCard from '../../../components/Kelas2/Tugas';
 import { supabase as supabaseClient } from '../../../lib/supabaseClient';
@@ -73,7 +73,6 @@ export default function HalamanKelasDinamis({ params }: { params: Promise<{ idFa
             <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
               Kelas <span className="font-normal text-gray-500">{kelasData.nama_kelas}</span>
             </h1>
-            <p className="text-xs text-gray-400 font-medium mt-1 uppercase tracking-wider">Semester Genap 2024/2025</p>
           </div>
 
           <div className="flex items-center gap-4">

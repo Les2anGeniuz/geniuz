@@ -12,11 +12,8 @@ import {
   UserLinear,
   Logout3Linear,
 } from "solar-icon-set";
-<<<<<<< HEAD
 // Pastikan path ini sesuai dengan struktur project Anda, biasanya @/lib/... atau ../../lib/...
 import { supabase } from "@/lib/supabaseClient"; 
-=======
->>>>>>> e731e2d87323f2ba431c863fec1f451ddd157e41
 
 interface UserData {
   name: string;
@@ -28,9 +25,6 @@ const SidebarAdmin = () => {
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
 
-<<<<<<< HEAD
-  // Menu untuk Admin
-=======
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -65,10 +59,9 @@ const SidebarAdmin = () => {
     fetchUser();
   }, []);
 
->>>>>>> e731e2d87323f2ba431c863fec1f451ddd157e41
   const menuOverview = [
     { name: "Dashboard", icon: Home2Linear, href: "/admin/dashboard" },
-    { name: "Analytics", icon: ChartSquareLinear, href: "/admin/analytics" },
+    // { name: "Analytics", icon: ChartSquareLinear, href: "/admin/analytics" },
   ];
 
   const menuManagement = [
@@ -194,7 +187,6 @@ const SidebarAdmin = () => {
           </ul>
         </div>
       </nav>
-<<<<<<< HEAD
 
       {/* Logout */}
       <div className="px-6 py-4 border-t border-gray-200">
@@ -206,8 +198,6 @@ const SidebarAdmin = () => {
           <span className="font-medium">Logout</span>
         </button>
       </div>
-=======
->>>>>>> e731e2d87323f2ba431c863fec1f451ddd157e41
     </aside>
   );
 };

@@ -9,13 +9,12 @@ type DashProfile = {
   nama_lengkap?: string | null;
   nama_fakultas?: string | null;
   email?: string | null;
-  id_fakultas?: string | number | null; // Tambahan untuk navigasi
 };
 
 type KelasRow = {
-  id_Kelas: string | number;
-  nama_kelas: string;
-  id_Fakultas?: string | number; // Tambahan untuk navigasi
+  id_Kelas?: string | number;
+  id_Fakultas?: string | number;
+  nama_kelas?: string;
 };
 
 type DashKelasSayaRes = {
@@ -35,18 +34,18 @@ const clearToken = () => typeof window !== "undefined" && localStorage.removeIte
 const Sidebar: React.FC = () => {
   const [userData, setUserData] = useState<UserData>({ name: "", fakultas: "", classes: [] });
   const [isLoading, setIsLoading] = useState(true);
-
   const router = useRouter();
   const pathname = usePathname();
 
-  const API_BASE = useMemo(
-    () => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api",
-    []
-  );
+  const API_BASE = useMemo(() => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api", []);
+
+  const handleLogout = () => {
+    clearToken();
+    router.replace("/login");
+  };
 
   useEffect(() => {
     const controller = new AbortController();
-
     const apiGet = async <T,>(path: string, token: string): Promise<T> => {
       const url = `${API_BASE}${path}`;
       const res = await fetch(url, {
@@ -54,14 +53,11 @@ const Sidebar: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
         signal: controller.signal,
       });
-
       if (res.status === 401) {
         clearToken();
         router.replace("/login");
         throw new Error("Unauthorized");
       }
-
-      if (!res.ok) throw new Error(`Request gagal ${res.status}`);
       return (await res.json()) as T;
     };
 
@@ -69,124 +65,103 @@ const Sidebar: React.FC = () => {
       setIsLoading(true);
       try {
         const token = getToken();
-        if (!token) {
-          router.replace("/login");
-          return;
-        }
+        if (!token) return;
 
         const [profile, kelasSaya] = await Promise.all([
           apiGet<DashProfile>("/dashboard/profile", token),
           apiGet<DashKelasSayaRes>("/dashboard/kelas-saya", token),
         ]);
 
-        const name = profile?.nama_lengkap?.trim() || "User";
-        const fakultas = profile?.nama_fakultas?.trim() || "-";
-        const idFakultasProfile = profile?.id_fakultas || "1";
-
         const kelasRows = Array.isArray(kelasSaya?.kelas_saya) ? kelasSaya.kelas_saya : [];
-        const classes = kelasRows
-          .map((k) => {
-            const label = (k?.nama_kelas || "").trim();
-            if (!label) return null;
-            return { 
-              label, 
-              idKelas: k.id_Kelas, 
-              idFakultas: k.id_Fakultas || idFakultasProfile 
-            };
-          })
-          .filter(Boolean) as UserData['classes'];
+        const classes = kelasRows.map((k) => ({
+          label: (k?.nama_kelas || "").trim(),
+          idKelas: k.id_Kelas ?? "",
+          idFakultas: k.id_Fakultas ?? "11"
+        })).filter(c => c.label !== "");
 
-        setUserData({ name, fakultas, classes });
+        setUserData({ 
+          name: profile?.nama_lengkap?.trim() || "User", 
+          fakultas: profile?.nama_fakultas?.trim() || "-", 
+          classes 
+        });
       } catch (e) {
-        console.error("[Sidebar] Error:", e);
-        setUserData({ name: "User", fakultas: "-", classes: [] });
+        console.error(e);
       } finally {
         setIsLoading(false);
       }
     })();
-
     return () => controller.abort();
   }, [API_BASE, router]);
 
-  const handleLogout = () => {
-    clearToken();
-    router.replace("/login");
-  };
-
   const getLinkClass = (path: string) => {
     const isActive = pathname === path || pathname.startsWith(path + "/");
-    const base =
-      "flex items-center gap-3 p-2 rounded-md ml-4 transition-all duration-200 text-sm font-medium w-full cursor-pointer";
+    const base = "flex items-center gap-3 py-2.5 px-4 rounded-lg transition-all duration-200 text-sm font-medium w-full cursor-pointer";
     return isActive
       ? `${base} bg-[#064479] text-white shadow-md`
       : `${base} text-[#0a4378] hover:bg-gray-100`;
   };
 
   return (
-    <div className="fixed top-16 left-0 h-full w-64 bg-white shadow-xl z-40 border-r border-gray-100">
-      <div className="flex flex-col p-4 space-y-6 h-full pb-20 overflow-y-auto">
-        <div className="mb-2 flex flex-col items-start ml-4 mt-2">
-          {isLoading ? (
-            <div className="animate-pulse space-y-2">
-              <div className="h-5 w-32 bg-gray-200 rounded"></div>
-              <div className="h-3 w-20 bg-gray-200 rounded"></div>
-            </div>
-          ) : (
-            <>
-              <div className="font-bold text-lg text-[#0a4378] capitalize truncate w-48" title={userData.name}>
-                {userData.name}
-              </div>
-              <span className="text-xs text-gray-500 font-medium mt-1">{userData.fakultas}</span>
-            </>
-          )}
-        </div>
+    <div className="fixed top-0 left-0 h-full w-64 bg-white shadow-sm z-50 border-r border-gray-100 flex flex-col">
+      {/* CSS untuk menyembunyikan scrollbar */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}} />
 
-        <div>
-          <div className="ml-4 mb-3 font-bold text-[#064479] text-xs uppercase tracking-wider opacity-80">Menu Utama</div>
-          <ul className="flex flex-col gap-2">
-            <li>
-              <Link href="/dashboard" className={getLinkClass("/dashboard")}>
-                <Image src="/home.svg" alt="Home" width={20} height={20} className={pathname === "/dashboard" ? "brightness-0 invert" : ""} />
-                <span>Beranda</span>
-              </Link>
-            </li>
-            <li>
-              <Link href="/settings" className={getLinkClass("/settings")}>
-                <Image src="/setting.svg" alt="Settings" width={20} height={20} className={pathname === "/settings" ? "brightness-0 invert" : ""} />
-                <span>Pengaturan</span>
-              </Link>
-            </li>
+      {/* 1. PROFIL - Disesuaikan agar pas di bawah Topbar */}
+      <div className="p-6 pt-24"> {/* pt-24 memberikan ruang agar profil tidak tertutup Topbar */}
+        <div className="font-bold text-lg text-[#0a4378] truncate w-full" title={userData.name}>
+          {userData.name}
+        </div>
+        <div className="text-xs text-gray-400 mt-0.5">{userData.fakultas}</div>
+      </div>
+
+      {/* 2. MENU UTAMA */}
+      <div className="px-4 mb-4">
+        <div className="mb-2 font-bold text-[#064479] text-[10px] uppercase tracking-widest opacity-50 px-2">Menu Utama</div>
+        <ul className="space-y-1">
+          <li>
+            <Link href="/dashboard" className={getLinkClass("/dashboard")}>
+              <Image src="/home.svg" alt="Home" width={18} height={18} className={pathname === "/dashboard" ? "brightness-0 invert" : ""} />
+              <span>Beranda</span>
+            </Link>
+          </li>
+          <li>
+            <Link href="/settings" className={getLinkClass("/settings")}>
+              <Image src="/setting.svg" alt="Settings" width={18} height={18} className={pathname === "/settings" ? "brightness-0 invert" : ""} />
+              <span>Pengaturan</span>
+            </Link>
+          </li>
+        </ul>
+      </div>
+
+      {/* 3. KELAS SAYA */}
+      <div className="flex-grow flex flex-col min-h-0 px-4">
+        <div className="mb-2 font-bold text-[#064479] text-[10px] uppercase tracking-widest opacity-50 px-2">Kelas Saya</div>
+        <div className="flex-grow overflow-y-auto no-scrollbar pb-6">
+          <ul className="space-y-1">
+            {userData.classes.map((c, idx) => {
+              const classPath = `/Kelas/${c.idFakultas}/${c.idKelas}`;
+              return (
+                <li key={`${c.idKelas}-${idx}`}>
+                  <Link href={classPath} className={getLinkClass(classPath)}>
+                    <Image src="/course.svg" alt="Course" width={18} height={18} className={pathname.startsWith(classPath) ? "brightness-0 invert" : ""} />
+                    <span className="truncate block flex-1">{c.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
+      </div>
 
-        <div>
-          <div className="ml-4 mb-3 font-bold text-[#064479] text-xs uppercase tracking-wider opacity-80">Kelas Saya</div>
-          <ul className="flex flex-col gap-2">
-            {userData.classes.length > 0 ? (
-              userData.classes.map((c, idx) => {
-                // Link diarahkan ke folder dinamis [idFakultas]/[idKelas]
-                const hrefPath = `/Kelas/${c.idFakultas}/${c.idKelas}`;
-                return (
-                  <li key={`${c.idKelas}-${idx}`}>
-                    <Link href={hrefPath} className={getLinkClass(hrefPath)}>
-                      <Image src="/course.svg" alt="Course" width={20} height={20} className={pathname.startsWith(hrefPath) ? "brightness-0 invert" : ""} />
-                      <span className="truncate">{c.label}</span>
-                    </Link>
-                  </li>
-                );
-              })
-            ) : (
-              <li className="text-xs text-gray-400 italic ml-4">Belum ada kelas aktif.</li>
-            )}
-          </ul>
-        </div>
-
-        <div className="mt-auto pt-4 border-t border-gray-100">
-          <button onClick={handleLogout} className="flex items-center gap-3 p-2 rounded-md ml-4 transition text-sm font-medium w-full text-[#0a4378] hover:bg-gray-100">
-            <Image src="/logout.svg" alt="Logout" width={20} height={20} />
-            <span>Logout</span>
-          </button>
-        </div>
+      {/* 4. LOGOUT - Warna Gelap */}
+      <div className="p-4 border-t border-gray-50 mt-auto">
+        <button onClick={handleLogout} className="flex items-center gap-3 py-2 px-4 rounded-lg transition-all text-sm font-semibold w-full text-gray-800 hover:bg-gray-100">
+          <Image src="/logout.svg" alt="Logout" width={18} height={18} />
+          <span>Keluar</span>
+        </button>
       </div>
     </div>
   );

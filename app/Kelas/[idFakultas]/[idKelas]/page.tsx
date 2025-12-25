@@ -36,6 +36,7 @@ export default function HalamanKelasDinamis({ params }: { params: Promise<{ idFa
         const id = Number(idKelas);
         if (isNaN(id)) return;
 
+        // ✅ Menambahkan order berdasarkan kolom 'urutan' agar pertemuan tampil berurutan
         const { data, error } = await supabaseClient
           .from('Kelas')
           .select(`
@@ -48,6 +49,7 @@ export default function HalamanKelasDinamis({ params }: { params: Promise<{ idFa
             )
           `)
           .eq('id_Kelas', id)
+          .order('urutan', { foreignTable: 'Materi', ascending: true }) 
           .single();
 
         if (error) {
@@ -84,10 +86,8 @@ export default function HalamanKelasDinamis({ params }: { params: Promise<{ idFa
       <Sidebar />
       <div className="flex-1 ml-64 flex flex-col">
         
-        {/* ✅ Topbar tetap di atas */}
         <Topbar />
 
-        {/* ✅ Menambahkan pt-20 (Padding Top) agar konten tidak tertutup Topbar yang melayang */}
         <main className="p-8 pt-24"> 
           {/* Judul Kelas */}
           <div className="mb-8">
@@ -139,7 +139,13 @@ export default function HalamanKelasDinamis({ params }: { params: Promise<{ idFa
                 {filteredMateri.map((materi: any) => {
                   const ytId = getYouTubeID(materi.link_konten);
                   const thumb = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : (materi.thumbnail_url || 'https://placehold.co/200x112');
+                  
+                  // ✅ AMBIL TIPE KONTEN ASLI DARI DATABASE
                   const labelTipe = (materi.tipe_konten || "MATERI").toUpperCase();
+                  
+                  // ✅ AMBIL NOMOR PERTEMUAN DARI KOLOM 'URUTAN'
+                  const nomorPertemuan = materi.urutan || "-";
+                  const labelPertemuan = `PERTEMUAN - ${nomorPertemuan}`;
 
                   return (
                     <Link 
@@ -152,8 +158,8 @@ export default function HalamanKelasDinamis({ params }: { params: Promise<{ idFa
                         title={materi.judul_materi}
                         date={materi.Tanggal_tayang}
                         thumbnailUrl={thumb}
-            // ✅ SEKARANG DINAMIS: Akan muncul VIDEO atau RANGKUMAN sesuai database
-                        tags={[labelTipe, "TAYANG"]} 
+                        // ✅ SEKARANG DINAMIS: Menampilkan Tipe, Nomor Pertemuan, dan Status
+                        tags={[labelTipe, labelPertemuan, "TAYANG"]} 
                       />
                     </Link>
                   );
@@ -187,7 +193,6 @@ export default function HalamanKelasDinamis({ params }: { params: Promise<{ idFa
           </div>
         </main>
         
-        {/* FOOTER */}
         <footer className="p-8 text-center text-gray-500 text-sm border-t border-gray-100 mt-12 bg-white">
           © Copyright 2025, Geniuz. All Rights Reserved
         </footer>

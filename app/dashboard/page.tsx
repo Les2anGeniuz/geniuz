@@ -4,10 +4,11 @@ import Sidebar from "../components/dashboardLayout/sidebar";
 import Topbar from "../components/dashboardLayout/topbar";
 import Overview from "../components/dashboardLayout/overview";
 import SearchBar from "../components/dashboardLayout/searchbar";
-import Activities from "../components/dashboardLayout/activity"; 
+import Activities from "../components/dashboardLayout/activity";  // Card Tugas Aktif
 import StatisticsChart from "../components/dashboardLayout/statisticChart"; 
 import Achievements from "../components/dashboardLayout/achievement"; 
-import MyClasses from "../components/dashboardLayout/myClasses";
+import MyClasses from "../components/dashboardLayout/myClasses";  // Kelas Saya tetap ada di sebelah kiri
+import ActiveTasks from "../components/dashboardLayout/activeTasks";  // Card Tugas Aktif Baru
 
 export default function DashboardPage() {
   return (
@@ -44,12 +45,15 @@ export default function DashboardPage() {
           </div>
 
           {/* === KOLOM KANAN (Tugas Aktif + Pencapaian) === */}
-          <div className="flex-1 w-full min-w-[400px] flex flex-col gap-6"> 
+          <div className="flex-1 w-full min-w-[400px] flex flex-col gap-6">
             {/* Kartu Tugas Aktif (Sesuai Gambar) */}
             <Activities />
             
             {/* Kartu Achievement / Sertifikat */}
             <Achievements />
+            
+            {/* Kartu Tugas Aktif Baru */}
+            <ActiveTasks />  {/* Card Tugas Aktif ditambahkan di bawah Pencapaian */}
           </div>
 
         </div>

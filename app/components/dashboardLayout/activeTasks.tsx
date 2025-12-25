@@ -1,113 +1,78 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
 
-interface TaskData {
+interface TaskItem {
+  id_Tugas: number;
   nama_tugas: string;
-  nama_matakuliah: string;
-  deadline_tanggal: string;
-  deadline_jam: string;
+  tenggat_waktu: string;
   status: string;
 }
 
 const ActiveTasks: React.FC = () => {
-  const [task, setTask] = useState<TaskData | null>(null);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchActiveTask = async () => {
+    const fetchTasks = async () => {
       try {
-        setLoading(true);
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) return;
+        const response = await fetch("/api/dashboard/tugas-aktif");
+        const data = await response.json();
 
-        // 1. Ambil ID User
-        const { data: userData } = await supabase
-          .from("User")
-          .select("id_User")
-          .eq("email", session.user.email)
-          .single();
+        console.log("Data tugas aktif:", data);
 
-        if (userData) {
-          // 2. Fetch Tugas dari tabel Tugas yang berelasi dengan kelas di Progress
-          // Asumsi: Tabel 'Tugas' memiliki id_Kelas dan status 'Belum Dikerjakan'
-          const { data: taskData, error } = await supabase
-            .from("Tugas")
-            .select(`
-              nama_tugas,
-              deadline_tanggal,
-              deadline_jam,
-              status,
-              Kelas ( nama_kelas )
-            `)
-            .eq("status", "Belum Dikerjakan")
-            .order("deadline_tanggal", { ascending: true })
-            .limit(1)
-            .maybeSingle();
+        if (response.ok) {
+          const fetchedTasks = data.data;
 
-          if (taskData) {
-            setTask({
-              nama_tugas: taskData.nama_tugas,
-              nama_matakuliah: (taskData.Kelas as any)?.nama_kelas || "Mata Kuliah",
-              deadline_tanggal: taskData.deadline_tanggal,
-              deadline_jam: taskData.deadline_jam,
-              status: taskData.status,
-            });
-          }
+          // Map data tugas untuk ditampilkan
+          const formattedTasks = fetchedTasks.map((item: any) => ({
+            id_Tugas: item.id_Tugas,
+            nama_tugas: item.nama_tugas,
+            tenggat_waktu: item.tenggat_waktu,
+            status: item.status,
+          }));
+
+          setTasks(formattedTasks);
+        } else {
+          console.error("Error fetching tasks:", data.message);
         }
       } catch (error) {
-        console.error("Error fetching task:", error);
+        console.error("Error fetching tasks:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchActiveTask();
+    fetchTasks();
   }, []);
 
-  if (loading) return <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-200 animate-pulse h-64"></div>;
-
   return (
-    <div className="w-full bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-      <h2 className="text-2xl font-bold text-[#1e293b] mb-6">Tugas Aktif</h2>
-      
-      {task ? (
-        <div className="bg-[#f3f4f6] border border-gray-100 rounded-2xl p-8 relative overflow-hidden">
-          <div className="flex flex-col gap-2">
-            <span className="text-xl text-gray-500 font-medium italic">
-              {task.nama_matakuliah}
-            </span>
-            
-            <h3 className="text-4xl font-black text-[#09090b] leading-tight tracking-tight">
-              {task.nama_tugas}
-            </h3>
-            
-            <div className="mt-8">
-              <p className="text-gray-900 font-bold text-xl">
-                {task.deadline_tanggal}
-              </p>
-              <p className="text-gray-500 font-medium text-lg">
-                {task.deadline_jam}
-              </p>
+    <div className="w-full bg-white border border-gray-200 rounded-xl p-6 shadow-sm h-[390px]"> {/* Menambahkan h-[390px] */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-[#1e293b]">Tugas Aktif</h2>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {loading ? (
+          <p className="text-gray-400 text-sm text-center py-4">Memuat tugas...</p>
+        ) : tasks.length > 0 ? (
+          tasks.map((task, idx) => (
+            <div key={idx} className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+              <div className="flex flex-col items-center min-w-[80px]">
+                <div className={`w-3 h-3 rounded-full mb-1 ${task.status === 'TELAH' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-[10px] font-bold text-gray-500 uppercase text-center leading-tight">
+                  {new Date(task.tenggat_waktu).toLocaleDateString()} <br/> {new Date(task.tenggat_waktu).toLocaleTimeString()}
+                </span>
+              </div>
+              <div className="h-10 w-[1px] bg-gray-200"></div>
+              <h3 className="font-bold text-[#1e293b] text-sm md:text-base truncate">
+                {task.nama_tugas}
+              </h3>
             </div>
-          </div>
-
-          <div className="absolute bottom-10 right-10">
-            <div className="w-8 h-8 rounded-full bg-[#ef4444] shadow-sm"></div>
-          </div>
-        </div>
-      ) : (
-        <div className="text-center py-10 text-gray-400 italic font-medium bg-gray-50 rounded-2xl border border-dashed border-gray-300">
-          Tidak ada tugas aktif saat ini.
-        </div>
-      )}
-
-      <div className="flex items-center gap-3 mt-6">
-        <div className="w-4 h-4 rounded-full bg-[#ef4444]"></div>
-        <span className="text-sm font-semibold text-gray-500 italic">
-          Belum Dikerjakan
-        </span>
+          ))
+        ) : (
+          <p className="text-gray-400 text-sm text-center py-4">Belum ada tugas aktif.</p>
+        )}
       </div>
     </div>
   );

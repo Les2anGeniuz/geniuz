@@ -2,7 +2,6 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 
 export default function LoginAdminPage() {
   const router = useRouter();
@@ -11,19 +10,36 @@ export default function LoginAdminPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      const fallbackUrl =
+        typeof window !== "undefined"
+          ? `${window.location.protocol}//${window.location.hostname}:5000`
+          : "http://localhost:5000";
 
-    const res = await fetch("/api/auth/admin-login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || fallbackUrl;
 
-    if (!res.ok) {
-      alert("Email atau password salah!");
-      return;
+      const res = await fetch(`${backendUrl}/api/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        alert("Email atau password salah!");
+        return;
+      }
+
+      const data = await res.json();
+      if (data?.token) {
+        // Set cookie yang sesuai dengan middleware
+        document.cookie = `admin_id=${data.token}; path=/; secure; samesite=strict`;
+      }
+
+      router.push("/admin/dashboard");
+    } catch (err) {
+      console.error("Login admin gagal", err);
+      alert("Tidak bisa terhubung ke backend. Pastikan backend jalan dan CORS mengizinkan origin ini.");
     }
-
-    router.push("/admin/dashboard");
   };
 
   return (

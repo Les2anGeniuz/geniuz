@@ -9,6 +9,22 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+        port: '',
+        pathname: '/vi/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
+    ],
+  },
 };
+
 
 export default nextConfig;

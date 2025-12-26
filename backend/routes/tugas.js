@@ -1,5 +1,5 @@
 import express from 'express'
-import requireAuth from '../middleware/auth.js'
+import { requireAuth } from '../middleware/auth.js'
 import { getTugasByKelas, getTugasById, getActiveTugasForUser } from '../controllers/tugasController.js'
 
 const router = express.Router()

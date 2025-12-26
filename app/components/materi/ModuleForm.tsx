@@ -11,79 +11,78 @@ export default function ModuleForm({
   onCreate: (m: any) => void;
   onCancel: () => void;
 }) {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [urutan, setUrutan] = useState<string | number>("");
-  const [loading, setLoading] = useState(false);
 
   const submit = async () => {
     if (!kelasId) return alert("Pilih kelas terlebih dahulu");
     if (!title) return alert("Judul modul diperlukan");
 
-    setLoading(true);
-    try {
-      const payload = {
-        id_Kelas: kelasId,
-        judul_materi: title,
-        deskripsi: description || null,
-        urutan: urutan ? Number(urutan) : null,
-      };
+    const payload = {
+      id_Kelas: Number(kelasId),
+      judul_materi: title,
+      deskripsi: description || null,
+      urutan: urutan ? Number(urutan) : null,
+    };
 
-      const res = await fetch("/api/materi", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        credentials: "same-origin",
-      });
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Gagal membuat modul");
+    const res = await fetch(`${backendUrl}/api/admin/materi`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
 
-      onCreate(json.data || json);
-      setTitle("");
-      setDescription("");
-      setUrutan("");
-    } catch (err: any) {
-      console.error(err);
-      alert(err.message || String(err));
-    } finally {
-      setLoading(false);
-    }
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error);
+
+    onCreate(json.data || json);
+    setTitle("");
+    setDescription("");
+    setUrutan("");
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
-      <h4 className="font-semibold mb-3">Buat Modul Baru</h4>
-      <div className="space-y-3">
+    <div className="bg-white border border-gray-200/70 rounded-2xl p-5 shadow-sm hover:shadow-md transition">
+      <h4 className="text-lg font-semibold mb-4">Buat Modul Baru</h4>
+
+      <div className="space-y-4">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Judul Modul"
-          className="w-full rounded-md border border-gray-300 px-3 py-2"
+          className="w-full rounded-xl border border-gray-300 px-4 py-3"
         />
 
         <input
           value={urutan as any}
           onChange={(e) => setUrutan(e.target.value)}
           placeholder="Urutan (angka)"
-          className="w-full rounded-md border border-gray-300 px-3 py-2"
+          className="w-full rounded-xl border border-gray-300 px-4 py-3"
         />
 
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Deskripsi (opsional)"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 h-24"
+          className="w-full rounded-xl border border-gray-300 px-4 py-3 h-28"
         />
 
         <div className="flex justify-end gap-2">
-          <button onClick={onCancel} className="px-3 py-2 rounded-md border">Batal</button>
           <button
-            onClick={submit}
-            disabled={loading}
-            className="bg-[#002D5B] text-white px-4 py-2 rounded-md disabled:opacity-60"
+            onClick={onCancel}
+            className="px-4 py-3 rounded-xl border border-gray-300"
           >
-            {loading ? "Menyimpan..." : "Simpan"}
+            Batal
+          </button>
+
+          <button onClick={submit} className="bg-[#0A2A43] text-white px-5 py-3 rounded-xl hover:bg-[#0F3B66] transition">
+            Simpan
           </button>
         </div>
       </div>

@@ -1,11 +1,16 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 type DashProfile = {
   nama_lengkap?: string | null;
   nama_fakultas?: string | null;
+};
+
+type MeProfile = {
+  foto_profil?: string | null;
 };
 
 type DashOverview = {
@@ -15,11 +20,16 @@ type DashOverview = {
 };
 
 const TOKEN_KEY = "access_token";
-const getToken = () => (typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY));
-const clearToken = () => typeof window !== "undefined" && localStorage.removeItem(TOKEN_KEY);
+const getToken = () =>
+  typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY);
+const clearToken = () =>
+  typeof window !== "undefined" && localStorage.removeItem(TOKEN_KEY);
 
 const Overview: React.FC = () => {
   const [profile, setProfile] = useState<DashProfile | null>(null);
+  const [fotoProfil, setFotoProfil] = useState<string>("");
+  const [imgError, setImgError] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -41,8 +51,6 @@ const Overview: React.FC = () => {
 
     const apiGet = async <T,>(path: string, token: string): Promise<T> => {
       const url = `${API_BASE}${path}`;
-      console.log("[Overview] FETCH:", url);
-
       const res = await fetch(url, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
@@ -74,12 +82,17 @@ const Overview: React.FC = () => {
           return;
         }
 
-        const [prof, ov] = await Promise.all([
+        // ✅ nama & fakultas: tetap dari dashboard/profile (biar gak berubah)
+        // ✅ foto: ambil dari me/profile (biar sama kayak settings)
+        const [dashProf, meProf, ov] = await Promise.all([
           apiGet<DashProfile>("/dashboard/profile", token),
+          apiGet<MeProfile>("/me/profile", token),
           apiGet<DashOverview>("/dashboard/overview", token),
         ]);
 
-        setProfile(prof);
+        setProfile(dashProf);
+        setFotoProfil((meProf?.foto_profil || "").trim());
+        setImgError(false);
 
         setStatistics({
           totalClasses: Number(ov?.total_kelas ?? 0),
@@ -101,7 +114,7 @@ const Overview: React.FC = () => {
   if (loading) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
         <span className="ml-3 text-gray-500">Memuat data belajar...</span>
       </div>
     );
@@ -119,9 +132,13 @@ const Overview: React.FC = () => {
     );
   }
 
-  const fullName = profile?.nama_lengkap || "Siswa";
+  const fullName = profile?.nama_lengkap?.trim() || "Siswa";
   const initial = fullName.charAt(0).toUpperCase();
-  const faculty = profile?.nama_fakultas || "Fakultas Belum Terdaftar";
+
+  // ✅ fakultas tetap dari dashboard/profile
+  const faculty = profile?.nama_fakultas?.trim() || "Fakultas Belum Terdaftar";
+
+  const showImage = fotoProfil !== "" && !imgError;
 
   return (
     <div className="w-full">
@@ -129,8 +146,20 @@ const Overview: React.FC = () => {
 
       <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-6 mb-6 flex flex-col md:flex-row items-center gap-3 shadow-sm">
         <div className="flex-shrink-0">
-          <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-gray-100 flex items-center justify-center overflow-hidden">
-            <span className="text-4xl font-bold text-gray-400">{initial}</span>
+          <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-gray-100 overflow-hidden relative flex items-center justify-center">
+            {showImage ? (
+              <Image
+                src={fotoProfil}
+                alt="Foto Profil"
+                fill
+                className="object-cover"
+                sizes="128px"
+                priority
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <span className="text-4xl font-bold text-gray-400">{initial}</span>
+            )}
           </div>
         </div>
 

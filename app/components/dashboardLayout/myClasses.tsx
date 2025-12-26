@@ -53,10 +53,56 @@ const MyClasses: React.FC = () => {
     (async () => {
       setLoading(true);
       try {
+<<<<<<< HEAD
         const token = getToken();
         if (!token) {
           setClasses([]);
           return;
+=======
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+
+        // Ambil ID User dari tabel User berdasarkan email auth
+        const { data: userData } = await supabase
+          .from("User")
+          .select("id_User")
+          .eq("email", session.user.email)
+          .single();
+
+        if (userData) {
+          // Ambil data Pendaftaran untuk mendapatkan kelas yang didaftar
+          const { data: pendaftaranData, error: pendErr } = await supabase
+            .from("Pendaftaran")
+            .select("*")
+            .eq("id_User", userData.id_User);
+
+          if (pendErr) {
+            console.error("Error fetching pendaftaran:", pendErr);
+            return;
+          }
+
+          if (pendaftaranData && pendaftaranData.length > 0) {
+            // Ambil detail kelas untuk setiap pendaftaran
+            const klasPromises = pendaftaranData.map(async (pendaftaran: any) => {
+              const { data: kelasData } = await supabase
+                .from("Kelas")
+                .select("id_Kelas, nama_kelas, hari, jam, is_online")
+                .eq("id_Kelas", pendaftaran.id_Kelas)
+                .single();
+
+              return {
+                id_Kelas: kelasData?.id_Kelas || pendaftaran.id_Kelas,
+                nama_kelas: kelasData?.nama_kelas || "Kelas Tidak Ditemukan",
+                hari: kelasData?.hari || "Senin",
+                jam: kelasData?.jam || "16.00 WIB",
+                isOnline: kelasData?.is_online || false,
+              };
+            });
+
+            const formatted = await Promise.all(klasPromises);
+            setClasses(formatted);
+          }
+>>>>>>> 5f87042d45a9fdded0f00a25901ec3982b6cad64
         }
 
         const data = await apiGet<DashKelasSayaRes>(

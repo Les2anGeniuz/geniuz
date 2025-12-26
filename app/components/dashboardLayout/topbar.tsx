@@ -86,6 +86,7 @@ const Topbar: React.FC = () => {
               className="cursor-pointer hover:opacity-80 transition"
             />
           </Link>
+<<<<<<< HEAD
 
           <Link href="/settings" className="block">
             <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 border border-gray-200 cursor-pointer relative">
@@ -96,6 +97,28 @@ const Topbar: React.FC = () => {
                 className="object-cover"
                 sizes="40px"
                 onError={() => setImgError(true)}
+=======
+          
+          <Link href="/profile">
+            {/* WRAPPER LINGKARAN (Div Pembungkus)
+               - w-10 h-10: Ukuran fix
+               - rounded-full: Membuat lingkaran
+               - overflow-hidden: Memastikan gambar tidak keluar dari lingkaran
+               - bg-gray-200: Warna dasar abu-abu (polosan) jika gambar tidak ada
+            */}
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 border border-gray-200 cursor-pointer flex items-center justify-center">
+              <Image
+                src="/default-profile.png" 
+                alt="Profile"
+                className="w-full h-full object-cover"
+                width={40}
+                height={40}
+                // Fungsi ini akan berjalan jika gambar tidak ditemukan (error)
+                onError={(e) => {
+                  // Menyembunyikan gambar yang rusak agar hanya terlihat background abu-abu (polosan)
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+>>>>>>> 5f87042d45a9fdded0f00a25901ec3982b6cad64
               />
             </div>
           </Link>

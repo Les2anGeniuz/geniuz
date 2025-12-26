@@ -158,7 +158,7 @@ const Sidebar: React.FC = () => {
 
       {/* 4. LOGOUT - Warna Gelap */}
       <div className="p-4 border-t border-gray-50 mt-auto">
-        <button onClick={handleLogout} className="flex items-center gap-3 py-2 px-4 rounded-lg transition-all text-sm font-semibold w-full text-gray-800 hover:bg-gray-100">
+        <button onClick={handleLogout} className="flex items-center gap-3 py-2 px-4 rounded-lg transition-all text-sm font-semibold w-full text-gray-800 hover:bg-gray-100 cursor-pointer">
           <Image src="/logout.svg" alt="Logout" width={18} height={18} />
           <span>Logout</span>
         </button>

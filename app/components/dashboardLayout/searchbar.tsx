@@ -124,7 +124,7 @@ const SearchBar = () => {
     <div ref={containerRef}>
       <form
         onSubmit={handleSearchSubmit}
-        className="flex items-center w-[350px] border border-[#41475E] rounded-md p-2 shadow-md absolute top-24 right-10 bg-white"
+        className="flex position-sticky top-20px items-center w-[250px] border border-[#41475E] rounded-md p-2 shadow-md absolute top-24 right-10 bg-white"
       >
         <Image
           src="/searchIcon.svg"

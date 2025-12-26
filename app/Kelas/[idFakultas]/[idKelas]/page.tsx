@@ -102,7 +102,7 @@ export default function HalamanKelasDinamis({ params }: { params: Promise<{ idFa
               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input 
                 type="search" 
-                placeholder="Search for Trainings" 
+                placeholder="Cari Materi" 
                 className="w-full border border-gray-200 rounded-lg py-2.5 pl-11 pr-4 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 onChange={(e) => setSearchTerm(e.target.value)}
               />

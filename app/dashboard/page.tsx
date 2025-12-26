@@ -9,6 +9,7 @@ import Achievements from "../components/dashboardLayout/achievement";
 import MyClasses from "../components/dashboardLayout/myClasses";
 import ActiveTasks from "../components/dashboardLayout/activeTasks";
 import ClassCards from "../components/dashboardLayout/ClassCards";
+import SearchBar from "../components/dashboardLayout/searchbar";
 
 export default function DashboardPage() {
   return (
@@ -18,6 +19,10 @@ export default function DashboardPage() {
         <Topbar />
 
         <div className="pt-24 px-8 pb-10 w-full">
+          <div className="flex justify-end mb-6">
+            <SearchBar />
+          </div>
+
           <div className="flex flex-col xl:flex-row gap-8 items-start">
             <div className="flex flex-col gap-6 w-full xl:w-[600px] flex-shrink-0">
               <Overview />

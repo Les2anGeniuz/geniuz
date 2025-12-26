@@ -12,7 +12,7 @@ type KelasRow = {
 
 type DashKelasSayaRes = {
   kelas_saya?: KelasRow[];
-  data?: KelasRow[]; // fallback kalau API kamu pakai data
+  data?: KelasRow[];
 };
 
 type SearchResult = {
@@ -38,7 +38,6 @@ const SearchBar = () => {
     []
   );
 
-  // ✅ ambil data kelas saya untuk jadi sumber search
   useEffect(() => {
     const controller = new AbortController();
 
@@ -90,7 +89,6 @@ const SearchBar = () => {
     return () => controller.abort();
   }, [API_BASE]);
 
-  // ✅ filter hasil berdasarkan input
   const results = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
@@ -99,7 +97,6 @@ const SearchBar = () => {
       .slice(0, 6);
   }, [classes, searchQuery]);
 
-  // ✅ close dropdown kalau klik di luar
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       if (!containerRef.current) return;
@@ -116,15 +113,14 @@ const SearchBar = () => {
 
   const handleSearchSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    // Enter = buka dropdown hasil (kalau ada)
     setOpen(true);
   };
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className="relative w-full max-w-[350px]">
       <form
         onSubmit={handleSearchSubmit}
-        className="flex position-sticky top-20px items-center w-[250px] border border-[#41475E] rounded-md p-2 shadow-md absolute top-24 right-10 bg-white"
+        className="flex items-center w-full border border-[#41475E] rounded-md p-2 shadow-md bg-white"
       >
         <Image
           src="/searchIcon.svg"
@@ -144,9 +140,8 @@ const SearchBar = () => {
         />
       </form>
 
-      {/* Dropdown hasil */}
       {open && searchQuery.trim() !== "" && (
-        <div className="absolute top-[calc(6rem+52px)] right-10 w-[350px] bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden z-50">
+        <div className="absolute top-full mt-2 right-0 w-full bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden z-50">
           {results.length > 0 ? (
             <div className="py-1">
               {results.map((it) => (

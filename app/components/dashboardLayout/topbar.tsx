@@ -40,10 +40,12 @@ const Topbar: React.FC = () => {
                - bg-gray-200: Warna dasar abu-abu (polosan) jika gambar tidak ada
             */}
             <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 border border-gray-200 cursor-pointer flex items-center justify-center">
-              <img
+              <Image 
                 src="/default-profile.png" 
                 alt="Profile"
                 className="w-full h-full object-cover"
+                width={40}
+                height={40}
                 // Fungsi ini akan berjalan jika gambar tidak ditemukan (error)
                 onError={(e) => {
                   // Menyembunyikan gambar yang rusak agar hanya terlihat background abu-abu (polosan)

@@ -12,11 +12,6 @@ import {
   UserLinear,
   Logout3Linear,
 } from "solar-icon-set";
-<<<<<<< HEAD
-// Pastikan path ini sesuai dengan struktur project Anda, biasanya @/lib/... atau ../../lib/...
-import { supabase } from "@/lib/supabaseClient"; 
-=======
->>>>>>> e731e2d87323f2ba431c863fec1f451ddd157e41
 
 interface UserData {
   name: string;
@@ -28,9 +23,6 @@ const SidebarAdmin = () => {
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
 
-<<<<<<< HEAD
-  // Menu untuk Admin
-=======
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -65,7 +57,6 @@ const SidebarAdmin = () => {
     fetchUser();
   }, []);
 
->>>>>>> e731e2d87323f2ba431c863fec1f451ddd157e41
   const menuOverview = [
     { name: "Dashboard", icon: Home2Linear, href: "/admin/dashboard" },
     { name: "Analytics", icon: ChartSquareLinear, href: "/admin/analytics" },
@@ -125,7 +116,7 @@ const SidebarAdmin = () => {
     <aside className="fixed top-0 left-0 h-full w-64 bg-[#F8FAFC] border-r border-gray-200 flex flex-col z-40">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200 flex items-center justify-center">
-        <Image
+        <img
           src="/logo_geniuz.png"
           alt="Logo Les-lesan Geniuz"
           width={110}
@@ -194,20 +185,6 @@ const SidebarAdmin = () => {
           </ul>
         </div>
       </nav>
-<<<<<<< HEAD
-
-      {/* Logout */}
-      <div className="px-6 py-4 border-t border-gray-200">
-        <button
-          onClick={handleLogout}
-          className="flex w-full items-center space-x-2 text-[#0A4378] hover:text-red-500 transition-colors"
-        >
-          <Logout3Linear size={18} />
-          <span className="font-medium">Logout</span>
-        </button>
-      </div>
-=======
->>>>>>> e731e2d87323f2ba431c863fec1f451ddd157e41
     </aside>
   );
 };

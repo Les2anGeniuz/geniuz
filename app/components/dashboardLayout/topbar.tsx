@@ -40,8 +40,6 @@ const Topbar: React.FC = () => {
   return (
     <nav className="fixed top-0 left-0 w-full bg-white shadow-sm z-50">
       <div className="max-w-8xl mx-auto flex items-center justify-between px-6 py-1">
-        
-        {/* === LOGO === */}
         <div className="flex items-center gap-2 ml-0">
           <Image
             src="/logo_geniuz.png"
@@ -52,7 +50,6 @@ const Topbar: React.FC = () => {
           />
         </div>
 
-        {/* === PROFILE AND NOTIFICATION ICON === */}
         <div className="flex items-center gap-4">
           <Link href="/notifications">
             <Image

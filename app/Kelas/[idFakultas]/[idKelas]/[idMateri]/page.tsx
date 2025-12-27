@@ -1,13 +1,12 @@
 "use client"
 
 import { useEffect, useMemo, useState, use } from "react"
-import { notFound } from "next/navigation"
 import Link from "next/link"
+import { notFound } from "next/navigation"
 
 import Sidebar from "../../../../components/dashboardLayout/sidebar"
 import Topbar from "../../../../components/dashboardLayout/topbar"
 import MateriCard from "../../../../components/Kelas2/Materi"
-import { supabase as supabaseClient } from "../../../../lib/supabaseClient"
 
 type MateriRow = {
   id_Materi: number
@@ -17,14 +16,56 @@ type MateriRow = {
   tipe_konten?: string | null
   link_konten?: string | null
   urutan?: number | null
-  thumbnail_url?: string | null
   Tanggal_tayang?: string | null
+  thumbnail_url?: string | null
 }
 
 type KelasRow = {
   id_Kelas: number
   nama_kelas: string
-  Materi: MateriRow[]
+}
+
+function backendUrl() {
+  return process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
+}
+
+function pickData(payload: any) {
+  if (!payload) return null
+  if (payload.data !== undefined) return payload.data
+  if (payload.materi !== undefined) return payload.materi
+  if (payload.kelas !== undefined) return payload.kelas
+  return payload
+}
+
+async function fetchJson(url: string, signal: AbortSignal) {
+  const res = await fetch(url, { cache: "no-store", signal })
+  const json = await res.json().catch(() => null)
+  return { ok: res.ok, status: res.status, json }
+}
+
+async function fetchKelasSmart(idKelas: number, signal: AbortSignal) {
+  const base = backendUrl()
+  const candidates = [
+    `${base}/api/kelas/${idKelas}`,
+    `${base}/api/kelas?id=${idKelas}`,
+    `${base}/api/kelas?id_Kelas=${idKelas}`,
+  ]
+
+  for (const u of candidates) {
+    const r = await fetchJson(u, signal)
+    if (r.ok) {
+      const raw = pickData(r.json)
+      if (raw) {
+        const nama = raw.nama_kelas ?? raw.name ?? raw.nama ?? ""
+        if (nama) return { id_Kelas: idKelas, nama_kelas: String(nama) }
+        return { id_Kelas: idKelas, nama_kelas: "" }
+      }
+      return { id_Kelas: idKelas, nama_kelas: "" }
+    }
+    if (r.status !== 404) break
+  }
+
+  return null
 }
 
 function getYouTubeID(url: string) {
@@ -46,54 +87,84 @@ function safeThumb(m: MateriRow) {
   return m.thumbnail_url || "https://placehold.co/200x112"
 }
 
-export default function HalamanMateriDinamis({
+export default function MateriPage({
   params,
 }: {
   params: Promise<{ idFakultas: string; idKelas: string; idMateri: string }>
 }) {
-  const resolvedParams = use(params)
-  const idKelas = resolvedParams.idKelas
-  const idFakultas = resolvedParams.idFakultas
-  const idMateri = resolvedParams.idMateri
+  const p = use(params)
+  const idFakultas = p.idFakultas
+  const idKelas = p.idKelas
+  const idMateri = p.idMateri
 
   const kelasIdNum = useMemo(() => Number(idKelas), [idKelas])
   const materiIdNum = useMemo(() => Number(idMateri), [idMateri])
 
-  const [kelasData, setKelasData] = useState<KelasRow | null>(null)
+  const [kelas, setKelas] = useState<KelasRow | null>(null)
   const [materi, setMateri] = useState<MateriRow | null>(null)
+  const [materiKelas, setMateriKelas] = useState<MateriRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [fatal, setFatal] = useState<string | null>(null)
 
   useEffect(() => {
+    const controller = new AbortController()
+
     const load = async () => {
       try {
-        const kId = Number(kelasIdNum)
-        const mId = Number(materiIdNum)
-        if (Number.isNaN(kId) || Number.isNaN(mId)) return
+        setLoading(true)
+        setFatal(null)
 
-        const { data, error } = await supabaseClient
-          .from("Kelas")
-          .select(`id_Kelas,nama_kelas,Materi (*)`)
-          .eq("id_Kelas", kId)
-          .single()
+        if (!Number.isFinite(kelasIdNum) || !Number.isFinite(materiIdNum)) {
+          setFatal("Param tidak valid")
+          return
+        }
 
-        if (error) return
+        const base = backendUrl()
 
-        const list = (data?.Materi || []) as MateriRow[]
-        const current = list.find((x) => x.id_Materi === mId) || null
+        const [kelasMaybe, listRes, detailRes] = await Promise.all([
+          fetchKelasSmart(kelasIdNum, controller.signal),
+          fetchJson(`${base}/api/materi?id_Kelas=${kelasIdNum}`, controller.signal),
+          fetchJson(`${base}/api/materi?id_Materi=${materiIdNum}`, controller.signal),
+        ])
 
-        setKelasData(data as any)
-        setMateri(current)
+        if (!listRes.ok) {
+          const msg = listRes.json?.error || `Gagal ambil list materi (${listRes.status})`
+          setFatal(String(msg))
+          return
+        }
+
+        if (!detailRes.ok) {
+          const msg = detailRes.json?.error || `Gagal ambil detail materi (${detailRes.status})`
+          setFatal(String(msg))
+          return
+        }
+
+        const listData = pickData(listRes.json)
+        const detailData = pickData(detailRes.json)
+
+        const listRows = Array.isArray(listData) ? (listData as MateriRow[]) : []
+        const detailRow = detailData && !Array.isArray(detailData) ? (detailData as MateriRow) : null
+
+        setMateriKelas(listRows)
+        setMateri(detailRow)
+
+        if (kelasMaybe) {
+          setKelas(kelasMaybe)
+        } else {
+          setKelas({ id_Kelas: kelasIdNum, nama_kelas: "" })
+        }
       } finally {
         setLoading(false)
       }
     }
 
     load()
+    return () => controller.abort()
   }, [kelasIdNum, materiIdNum])
 
   const nextItems = useMemo(() => {
-    if (!kelasData?.Materi?.length || !materi) return []
-    const sorted = [...kelasData.Materi].sort((a, b) => {
+    if (!materiKelas.length || !materi) return []
+    const sorted = [...materiKelas].sort((a, b) => {
       const au = a.urutan ?? 0
       const bu = b.urutan ?? 0
       if (au !== bu) return au - bu
@@ -101,16 +172,30 @@ export default function HalamanMateriDinamis({
     })
     const idx = sorted.findIndex((x) => x.id_Materi === materi.id_Materi)
     const after = idx >= 0 ? sorted.slice(idx + 1) : sorted
-    const filtered = after.filter((x) => x.id_Materi !== materi.id_Materi)
-    return filtered.slice(0, 2)
-  }, [kelasData, materi])
+    return after.slice(0, 2)
+  }, [materiKelas, materi])
 
   if (loading) return <div className="p-10 text-center italic text-gray-500">Memuat materi...</div>
-  if (!kelasData) return notFound()
+
+  if (fatal) {
+    return (
+      <div className="p-10 text-center text-sm text-gray-600">
+        <div className="font-semibold text-gray-900">Gagal memuat</div>
+        <div className="mt-2">{fatal}</div>
+        <div className="mt-4">
+          <Link className="text-blue-700 font-semibold hover:underline" href={`/Kelas/${idFakultas}/${idKelas}`}>
+            Kembali ke daftar materi
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   if (!materi) return notFound()
 
   const embedSrc = materi.link_konten ? toYouTubeEmbed(materi.link_konten) : ""
   const labelTipe = (materi.tipe_konten || "MATERI").toUpperCase()
+  const kelasNama = kelas?.nama_kelas ? kelas.nama_kelas : ""
 
   return (
     <div className="flex bg-[#F8F9FA] min-h-screen text-gray-900">
@@ -121,7 +206,7 @@ export default function HalamanMateriDinamis({
         <main className="p-8 pt-24">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              Kelas <span className="font-normal text-gray-500">{kelasData.nama_kelas}</span>
+              Kelas <span className="font-normal text-gray-500">{kelasNama}</span>
             </h1>
           </div>
 

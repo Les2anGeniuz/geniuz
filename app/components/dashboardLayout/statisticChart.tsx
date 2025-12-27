@@ -78,7 +78,7 @@ const StatisticsChart: React.FC = () => {
   }
 
   return (
-    <div className="w-full bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+    <div className="w-full bg-white border border-gray-200 rounded-xl p-6 shadow-sm h-[390px]">
       <h2 className="text-xl font-bold text-black mb-4">Statistik</h2>
 
       <div className="h-[300px] w-full flex justify-center items-center relative">
@@ -104,15 +104,9 @@ const StatisticsChart: React.FC = () => {
               </Pie>
 
               {/* 🔧 FIX UTAMA ADA DI SINI */}
-              <Tooltip
-                formatter={(value, name) => [Number(value ?? 0), name]}
-              />
+              <Tooltip formatter={(value, name) => [Number(value ?? 0), name]} />
 
-              <Legend
-                verticalAlign="bottom"
-                height={36}
-                iconType="circle"
-              />
+              <Legend verticalAlign="bottom" height={36} iconType="circle" />
             </PieChart>
           </ResponsiveContainer>
         ) : (

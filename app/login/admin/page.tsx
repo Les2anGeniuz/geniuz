@@ -31,11 +31,14 @@ export default function LoginAdminPage() {
 
       const data = await res.json();
       if (data?.token) {
-        // Set cookie yang sesuai dengan middleware
+        // Simpan token ke localStorage agar bisa digunakan untuk auth
+        localStorage.setItem("admin_token", data.token);
+        // Set cookie (optional, for legacy)
         document.cookie = `admin_id=${data.token}; path=/; secure; samesite=strict`;
+        router.push("/admin/dashboard");
+      } else {
+        alert("Login gagal: token tidak diterima dari server.");
       }
-
-      router.push("/admin/dashboard");
     } catch (err) {
       console.error("Login admin gagal", err);
       alert("Tidak bisa terhubung ke backend. Pastikan backend jalan dan CORS mengizinkan origin ini.");

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
 export async function POST(req: Request) {
   const { email, password } = await req.json();
@@ -17,6 +20,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
   }
 
+  // Generate JWT token
+  const token = jwt.sign(
+    {
+      id: admin.id,
+      email: admin.email,
+      role: "admin",
+      nama: admin.nama || admin.nama_lengkap || "Admin"
+    },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  // Set cookie (optional, for legacy)
   const cookieStore = await cookies();
   cookieStore.set("admin_id", String(admin.id), {
     httpOnly: true,
@@ -25,5 +41,5 @@ export async function POST(req: Request) {
     path: "/",
   });
 
-  return NextResponse.json({ message: "Login success" });
+  return NextResponse.json({ token });
 }

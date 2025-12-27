@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import NavbarAdmin from "../../components/layouts/navbarAdmin";
 import SidebarAdmin from "../../components/layouts/sidebarAdmin";
 
@@ -31,9 +33,22 @@ interface Task {
 
 export default function AdminMateri() {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-  const authHeaders = () => {
+  const router = useRouter();
+
+  // Helper: get auth headers from either Supabase or backend JWT
+  const getAuthHeaders = async (): Promise<HeadersInit> => {
+    // 1. Try Supabase session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && session.access_token) {
+      return { Authorization: `Bearer ${session.access_token}` };
+    }
+    // 2. Try backend JWT
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+    // Always return an empty object with correct type
+    return {};
   };
 
   const [classes, setClasses] = useState<Kelas[]>([]);
@@ -48,22 +63,28 @@ export default function AdminMateri() {
   useEffect(() => {
     const load = async () => {
       try {
+        // Check auth: if neither Supabase nor admin_token, redirect to login
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+        if (!session && !token) {
+          console.warn("No Supabase session or admin_token found, redirecting to /login");
+          router.push("/login");
+          return;
+        }
+        const headers = await getAuthHeaders();
         const res = await fetch(`${backendUrl}/api/admin/kelas?limit=50`, {
-          headers: { ...authHeaders() },
+          headers,
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json?.error || "Gagal ambil kelas");
         setClasses(json.data || []);
       } catch (err) {
-        console.error(err);
+        console.error("Error in AdminMateri useEffect load:", err);
       }
     };
     load();
-  }, [backendUrl]);
+  }, [backendUrl, router]);
 
-  // -----------------------------------------------------
-  // Load modules & tasks ketika kelas dipilih
-  // -----------------------------------------------------
   useEffect(() => {
     if (!selected) {
       setModules([]);
@@ -73,34 +94,30 @@ export default function AdminMateri() {
 
     const loadDetails = async () => {
       try {
-        const kelasId = selected.id_Kelas ?? selected.id
-
+        const headers = await getAuthHeaders();
+        const kelasId = selected.id_Kelas ?? selected.id;
         const [mRes, tRes] = await Promise.all([
           fetch(`${backendUrl}/api/admin/materi?id_Kelas=${kelasId}`, {
-            headers: { ...authHeaders() },
+            headers,
           }),
           fetch(`${backendUrl}/api/admin/tugas?id_Kelas=${kelasId}`, {
-            headers: { ...authHeaders() },
+            headers,
           }),
         ]);
-
         const mJson = await mRes.json();
         const tJson = await tRes.json();
-
         const materi = mJson.data || [];
         const normalizedModules = materi.map((m: { id_Materi: number; judul_materi: string; deskripsi?: string }) => ({
           id: m.id_Materi,
           title: m.judul_materi,
           description: m.deskripsi ?? "",
         }));
-
         setModules(normalizedModules);
         setTasks(tJson.data || []);
       } catch (err) {
         console.error(err);
       }
     };
-
     loadDetails();
   }, [backendUrl, selected]);
 

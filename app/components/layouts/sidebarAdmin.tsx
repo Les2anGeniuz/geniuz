@@ -12,7 +12,6 @@ import {
   UserLinear,
   Logout3Linear,
 } from "solar-icon-set";
-// Pastikan path ini sesuai dengan struktur project Anda, biasanya @/lib/... atau ../../lib/...
 import { supabase } from "@/lib/supabaseClient"; 
 
 interface UserData {
@@ -27,35 +26,86 @@ const SidebarAdmin = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
-
-        if (!token) {
-          setUser(null);
+      // 1. Try Supabase session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (session && session.user) {
+        // Try to get user info from Supabase table (try both 'User' and 'user')
+        let userData = null;
+        let supabaseError = null;
+        try {
+          const { data, error } = await supabase
+            .from("User")
+            .select("nama_lengkap, email")
+            .eq("email", session.user.email)
+            .single();
+          if (!error && data) {
+            userData = data;
+          } else {
+            supabaseError = error;
+          }
+        } catch (err) {
+          supabaseError = err;
+        }
+        // If not found, try lowercase 'user'
+        if (!userData) {
+          try {
+            const { data, error } = await supabase
+              .from("user")
+              .select("nama_lengkap, email")
+              .eq("email", session.user.email)
+              .single();
+            if (!error && data) {
+              userData = data;
+            } else {
+              supabaseError = error;
+            }
+          } catch (err) {
+            supabaseError = err;
+          }
+        }
+        if (userData) {
+          setUser({ name: userData.nama_lengkap || "Admin", email: userData.email || session.user.email || "" });
+          return;
+        } else {
+          if (supabaseError) {
+            console.error("Supabase user fetch error:", supabaseError);
+          }
+          setUser({
+            name: session.user.user_metadata?.full_name || session.user.email || "Admin",
+            email: session.user.email || ""
+          });
           return;
         }
-
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-
-        const res = await fetch(`${backendUrl}/api/admin/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          setUser(null);
-          return;
-        }
-
-        const data = await res.json();
-        setUser({ name: data.nama ?? "Admin", email: data.email ?? "" });
-      } catch (err) {
-        console.error("Error fetching admin profile", err);
       }
-    };
 
+      // 2. Try backend JWT
+      const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+      if (token) {
+        try {
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+          const res = await fetch(`${backendUrl}/api/admin/me`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            cache: "no-store",
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setUser({ name: data.nama ?? "Admin", email: data.email ?? "" });
+            return;
+          } else {
+            const errText = await res.text();
+            console.error("Backend /api/admin/me error:", errText);
+          }
+        } catch (err) {
+          console.error("Error fetching admin profile", err);
+        }
+      }
+
+      // 3. If neither, redirect to login
+      setUser(null);
+      router.push("/login");
+    };
     fetchUser();
   }, []);
 
@@ -70,42 +120,12 @@ const SidebarAdmin = () => {
     { name: "Siswa", icon: UserLinear, href: "/admin/siswa" },
   ];
 
-  // Fetch Data User (Admin)
-  useEffect(() => {
-    const fetchUser = async () => {
-      // Mengambil session user yang sedang login
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        console.error("Session error", sessionError);
-        return;
-      }
+  // ...existing code...
 
-      // Opsional: Ambil detail tambahan dari tabel User jika perlu
-      const { data, error } = await supabase
-        .from("User")
-        .select("nama_lengkap, email")
-        .eq("email", session.user.email) // Pastikan mencocokkan user yang benar
-        .single();
-
-      if (!error && data) {
-        setUser({ name: data.nama_lengkap, email: data.email });
-      } else {
-        // Fallback ke data session jika data tabel gagal diambil
-        setUser({ 
-            name: session.user.user_metadata.full_name || "Admin", 
-            email: session.user.email || "" 
-        });
-      }
-    };
-
-    fetchUser();
-  }, []);
-
-  // Fungsi Logout (Diambil dari logika HEAD agar berfungsi)
+  // Fungsi Logout (clear both Supabase and backend JWT)
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem("token"); // Hapus token jika Anda menyimpannya manual
+    localStorage.removeItem("admin_token"); // Hapus token backend
     router.push("/login"); // Redirect ke login
   };
 

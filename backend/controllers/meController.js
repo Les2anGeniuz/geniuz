@@ -106,11 +106,16 @@ export const updateProfile = async (req, res) => {
     const userId = req.user?.id_User
     if (!userId) return res.status(401).json({ error: 'Unauthorized' })
 
-    const { email, foto_profil } = req.body 
+    // AMBIL nama_lengkap JUGA DARI BODY
+    const { email, foto_profil, nama_lengkap } = req.body 
 
     const { data, error } = await supabaseAdmin
       .from('User')
-      .update({ email, foto_profil })
+      .update({ 
+        email, 
+        foto_profil, 
+        nama_lengkap // SIMPAN KE DATABASE
+      })
       .eq('id_User', userId)
 
     if (error) return res.status(500).json({ error: error.message })

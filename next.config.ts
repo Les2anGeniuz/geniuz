@@ -14,6 +14,18 @@ images: {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'sesvblqrcbdmnkfvugtk.supabase.co', 
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+        port: '',
+        pathname: '/vi/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'placehold.co',
       },
     ],

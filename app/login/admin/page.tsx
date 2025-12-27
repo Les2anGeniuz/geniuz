@@ -31,7 +31,8 @@ export default function LoginAdminPage() {
 
       const data = await res.json();
       if (data?.token) {
-        localStorage.setItem("admin_token", data.token);
+        // Set cookie yang sesuai dengan middleware
+        document.cookie = `admin_id=${data.token}; path=/; secure; samesite=strict`;
       }
 
       router.push("/admin/dashboard");

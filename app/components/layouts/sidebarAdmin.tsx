@@ -12,6 +12,8 @@ import {
   UserLinear,
   Logout3Linear,
 } from "solar-icon-set";
+// Pastikan path ini sesuai dengan struktur project Anda, biasanya @/lib/... atau ../../lib/...
+import { supabase } from "@/lib/supabaseClient"; 
 
 interface UserData {
   name: string;
@@ -59,7 +61,7 @@ const SidebarAdmin = () => {
 
   const menuOverview = [
     { name: "Dashboard", icon: Home2Linear, href: "/admin/dashboard" },
-    { name: "Analytics", icon: ChartSquareLinear, href: "/admin/analytics" },
+    // { name: "Analytics", icon: ChartSquareLinear, href: "/admin/analytics" },
   ];
 
   const menuManagement = [
@@ -121,7 +123,6 @@ const SidebarAdmin = () => {
           alt="Logo Les-lesan Geniuz"
           width={110}
           height={30}
-          priority
         />
       </div>
 
@@ -185,6 +186,17 @@ const SidebarAdmin = () => {
           </ul>
         </div>
       </nav>
+
+      {/* Logout */}
+      <div className="px-6 py-4 border-t border-gray-200">
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center space-x-2 text-[#0A4378] hover:text-red-500 transition-colors"
+        >
+          <Logout3Linear size={18} />
+          <span className="font-medium">Logout</span>
+        </button>
+      </div>
     </aside>
   );
 };

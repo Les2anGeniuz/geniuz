@@ -25,7 +25,7 @@ export default function TugasCard({ id, title, dueDate, status }: TugasCardProps
               }`}
             >
               {/* Logika perubahan teks di sini */}
-              {isSubmitted ? 'Telah Diselesaikan' : 'Belum Selesai'}
+              {isSubmitted ? 'Selesai' : 'Belum Dikerjakan'}
             </span>
             
             <h3 className="text-md font-semibold text-gray-900 mt-2 hover:text-blue-600 leading-tight">

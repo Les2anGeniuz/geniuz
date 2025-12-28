@@ -1,3 +1,5 @@
+//dashboardcontroller
+
 import { supabaseAdmin } from "../services/supabase.js";
 
 /** Ambil pendaftaran terakhir user (buat dapet id_Fakultas) */
@@ -140,20 +142,21 @@ export const getDashboardTugasAktif = async (req, res) => {
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const kelasIds = await getUserKelasIds(userId);
-    if (!kelasIds.length) return res.status(200).json({ tugas: null });
+    // Jika tidak ada kelas, kirim array kosong agar frontend tidak bingung
+    if (!kelasIds.length) return res.status(200).json({ tugas: [] });
 
     const { data: tugasRows, error: tugasErr } = await supabaseAdmin
       .from("Tugas")
       .select("id_Tugas, id_Kelas, judul_tugas, deskripsi, tanggal_mulai, tanggal_selesai, tenggat_waktu, status")
       .in("id_Kelas", kelasIds)
-      .order("tanggal_selesai", { ascending: true })
-      .limit(25);
+      .order("tanggal_selesai", { ascending: true });
 
     if (tugasErr) return res.status(500).json({ error: tugasErr.message });
-    if (!tugasRows?.length) return res.status(200).json({ tugas: null });
+    if (!tugasRows?.length) return res.status(200).json({ tugas: [] });
 
     const tugasIds = tugasRows.map((t) => t.id_Tugas);
 
+    // Cek tugas mana saja yang sudah dikumpulkan
     const { data: subs, error: subErr } = await supabaseAdmin
       .from("Pengumpulan_Tugas")
       .select("id_Tugas")
@@ -162,10 +165,12 @@ export const getDashboardTugasAktif = async (req, res) => {
 
     if (subErr) return res.status(500).json({ error: subErr.message });
 
-    const submitted = new Set((subs || []).map((s) => s.id_Tugas));
-    const active = tugasRows.find((t) => !submitted.has(t.id_Tugas)) || null;
+    const submittedSet = new Set((subs || []).map((s) => s.id_Tugas));
+    
+    // Filter tugas yang BELUM ada di tabel Pengumpulan_Tugas
+    const activeTasks = tugasRows.filter((t) => !submittedSet.has(t.id_Tugas));
 
-    return res.status(200).json({ tugas: active });
+    return res.status(200).json({ tugas: activeTasks }); // Mengirimkan ARRAY
   } catch (e) {
     return res.status(500).json({ error: e?.message || "Internal server error" });
   }

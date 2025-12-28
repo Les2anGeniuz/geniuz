@@ -1,10 +1,7 @@
 
-//activetasks
-'use client';
-
-import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import TugasCard from '../../components/Kelas2/Tugas'; // Pastikan path ini benar
+import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const TOKEN_KEY = "access_token";
 const getToken = () =>
@@ -13,7 +10,7 @@ const clearToken = () =>
   typeof window !== "undefined" && localStorage.removeItem(TOKEN_KEY);
 
 const ActiveTasks: React.FC = () => {
-  const [tasks, setTasks] = useState<any[]>([]); 
+  const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,6 +20,7 @@ const ActiveTasks: React.FC = () => {
     []
   );
 
+  // --- LOGIKA ASLI TETAP DIPERTAHANKAN ---
   useEffect(() => {
     const controller = new AbortController();
 
@@ -59,16 +57,9 @@ const ActiveTasks: React.FC = () => {
           return;
         }
 
-        // MENGGUNAKAN PATH DASHBOARD SESUAI SERVER.JS
         const data = await apiGet<any>("/dashboard/tugas-aktif", token);
 
-        console.log("Active Tasks Data:", data);
-
         if (data && data.tugas) {
-          /** * LOGIC FIX: 
-           * Karena backend mengirim satu objek { tugas: {...} }, 
-           * kita ubah jadi Array agar bisa di-.map di render bawah.
-           */
           const tugasArray = Array.isArray(data.tugas) ? data.tugas : [data.tugas];
           setTasks(tugasArray);
         } else {
@@ -86,62 +77,94 @@ const ActiveTasks: React.FC = () => {
     return () => controller.abort();
   }, [API_BASE, router]);
 
-  if (loading) {
-    return (
-      <div className="w-full h-[390px] bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-        <span className="ml-3 text-gray-500">Memuat data tugas...</span>
-      </div>
-    );
-  }
+  const formatIndoDate = (dateString: string) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+  };
 
-  if (error) {
+  const formatIndoTime = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
     return (
-      <div className="w-full">
-        <h1 className="text-3xl font-semibold text-black mb-3">Tugas Aktif</h1>
-        <div className="w-[600px] bg-white border border-red-200 rounded-xl p-6 shadow-sm">
-          <p className="text-red-600 font-semibold">Gagal memuat data</p>
-          <p className="text-gray-600 mt-1">{error}</p>
-        </div>
-      </div>
+      date
+        .toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+        .replace(":", ".") + " WIB"
     );
-  }
-
-  const hasData = tasks.length > 0;
+  };
 
   return (
     <div className="w-full bg-white border border-gray-200 rounded-2xl p-6 shadow-sm h-[390px] flex flex-col">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
+      {/* Header - Ukuran text-[28px] sesuai Kelas Saya */}
+      <div className="mb-4">
         <h2 className="text-[28px] leading-none font-extrabold text-[#0f172a]">
           Tugas Aktif
         </h2>
       </div>
 
-      {/* List */}
-      <div className="flex-1 overflow-y-auto pr-2 no-scrollbar">
-        {hasData ? (
-          <div className="flex flex-col gap-4">
-            {tasks.map((task: any) => (
-              <TugasCard
+      {/* List Area - Scrollable */}
+      <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 space-y-4">
+        {loading ? (
+          <p className="text-gray-400 text-sm text-center py-10">Memuat data...</p>
+        ) : error ? (
+          <p className="text-red-500 text-sm text-center py-10">{error}</p>
+        ) : tasks.length > 0 ? (
+          tasks.map((task: any) => {
+            const isDone = task.status === "Selesai" || task.status === "TELAH";
+            const dotColor = isDone ? "bg-green-500" : "bg-red-500";
+
+            return (
+              <Link 
                 key={task.id_Tugas} 
-                id={task.id_Tugas}
-                title={task.judul_tugas} // Menyesuaikan nama kolom dari Controller
-                dueDate={task.tenggat_waktu || task.tanggal_selesai} // Menyesuaikan deadline
-                status={task.status || "Belum Selesai"}
-              />
-            ))}
-          </div>
+                href={`/tugas/${task.id_Tugas}`} 
+                className="block group"
+              >
+                {/* Card besar (min-h-[250px]) agar memenuhi area sesuai desain */}
+                <div
+                  className="w-full bg-[#f8fafc] rounded-[24px] border border-gray-200 p-8 
+                             transition group-hover:bg-[#f1f5f9] group-hover:border-gray-300 cursor-pointer flex flex-col min-h-[250px] justify-between"
+                >
+                  {/* Judul Tugas - Font dikecilkan ke text-[26px] sesuai permintaan */}
+                  <h3 className="text-[26px] font-extrabold text-[#0f172a] leading-tight group-hover:text-blue-700 transition">
+                    {task.judul_tugas}
+                  </h3>
+
+                  {/* Deadline & Dot Indicator */}
+                  <div className="flex justify-between items-end">
+                    <div className="text-lg font-bold text-[#0f172a] leading-tight">
+                      <p>{formatIndoDate(task.tenggat_waktu || task.tanggal_selesai)}</p>
+                      <p className="font-medium text-gray-500">{formatIndoTime(task.tenggat_waktu || task.tanggal_selesai)}</p>
+                    </div>
+
+                    {/* Status Dot */}
+                    <div className={`w-4 h-4 rounded-full ${dotColor} shadow-[0_0_8px_rgba(0,0,0,0.1)]`} />
+                  </div>
+                </div>
+              </Link>
+            );
+          })
         ) : (
-          <div className="flex-1 flex flex-col justify-center items-center text-center">
-             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-3">
-                <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-             </div>
-            <p className="text-gray-400 font-medium">Santai dulu! Belum ada tugas aktif buat kamu.</p>
+          <div className="flex-1 flex flex-col justify-center items-center text-center py-10">
+            <p className="text-gray-400 font-medium">Belum ada tugas aktif.</p>
           </div>
         )}
+      </div>
+
+      {/* Legend - Teks "Belum Dikerjakan" tidak italic */}
+      <div className="flex gap-6 mt-4">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-green-500" />
+          <span className="text-xs text-gray-500 font-medium">Selesai</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-red-500" />
+          <span className="text-xs text-gray-500 font-medium">Belum Dikerjakan</span>
+        </div>
       </div>
     </div>
   );

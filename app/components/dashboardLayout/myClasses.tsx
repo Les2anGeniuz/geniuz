@@ -5,11 +5,11 @@ import Link from "next/link";
 
 type KelasSayaItem = {
   id_Kelas?: string | number;
-  id_Fakultas?: string | number; // ✅ buat routing ke /Kelas/:idFakultas/:idKelas
+  id_Fakultas?: string | number;
   nama_kelas?: string;
   hari?: string;
   jam?: string;
-  isOnline?: boolean; // optional => default online
+  isOnline?: boolean;
 };
 
 type DashKelasSayaRes = {
@@ -68,11 +68,11 @@ const MyClasses: React.FC = () => {
         const normalized = rows
           .map((k) => ({
             id_Kelas: k.id_Kelas,
-            id_Fakultas: k.id_Fakultas ?? "11", // ✅ fallback kayak Sidebar
+            id_Fakultas: k.id_Fakultas ?? "11", //
             nama_kelas: (k.nama_kelas || "").trim(),
             hari: (k.hari || "").trim(),
             jam: (k.jam || "").trim(),
-            isOnline: k.isOnline ?? true, // ✅ default online kalau field-nya gak ada
+            isOnline: k.isOnline ?? true, 
           }))
           .filter((k) => k.nama_kelas !== "");
 
@@ -118,7 +118,6 @@ const MyClasses: React.FC = () => {
                 >
                   <div className="flex items-center bg-[#f8fafc] rounded-2xl border border-gray-200 px-6 py-5
                                   transition hover:bg-[#f1f5f9] hover:border-gray-300 cursor-pointer">
-                    {/* Left: dot + meta (kalau ada), TANPA space kosong */}
                     <div className="flex items-start gap-3 min-w-fit">
                       <div className={`w-3.5 h-3.5 rounded-full mt-1 ${dotClass}`} />
                       {hasMeta ? (
@@ -135,10 +134,8 @@ const MyClasses: React.FC = () => {
                       ) : null}
                     </div>
 
-                    {/* Divider */}
                     <div className="h-12 w-px bg-gray-300 mx-8" />
 
-                    {/* Right: nama kelas */}
                     <div className="flex-1 min-w-0">
                       <div className="text-[20px] font-extrabold text-[#0f172a] truncate">
                         {cls.nama_kelas}
@@ -156,7 +153,6 @@ const MyClasses: React.FC = () => {
         )}
       </div>
 
-      {/* Legend */}
       <div className="flex gap-6 mt-4">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500" />

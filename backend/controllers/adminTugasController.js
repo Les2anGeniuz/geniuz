@@ -172,3 +172,53 @@ export const deleteAdminTugas = async (req, res) => {
     return res.status(500).json({ error: e?.message || 'Internal server error' })
   }
 }
+
+
+// Di dalam file controller admin tugas kamu
+export const createTugas = async (req, res) => {
+  try {
+    const { id_Kelas, judul_tugas, deskripsi, tenggat_waktu } = req.body;
+
+    // 1. Simpan tugas baru ke tabel Tugas
+    const { data: tugasBaru, error: tugasErr } = await supabaseAdmin
+      .from('Tugas')
+      .insert([{ id_Kelas, judul_tugas, deskripsi, tenggat_waktu }])
+      .select()
+      .single();
+
+    if (tugasErr) throw tugasErr;
+
+    // --- LOGIKA NOTIFIKASI DIMULAI DISINI ---
+
+    // 2. Cari semua siswa yang terdaftar di kelas tersebut (dari tabel Pendaftaran)
+    const { data: daftarSiswa, error: siswaErr } = await supabaseAdmin
+      .from('Pendaftaran')
+      .select('id_User')
+      .eq('id_Kelas', id_Kelas);
+
+    if (siswaErr) throw siswaErr;
+
+    // 3. Jika ada siswa, buat data notifikasi untuk masing-masing siswa
+    if (daftarSiswa && daftarSiswa.length > 0) {
+      const kumpulanNotif = daftarSiswa.map((siswa) => ({
+        id_User: siswa.id_User,
+        judul: 'Tugas Baru! 📚',
+        pesan: `Ada tugas baru "${judul_tugas}" di kelas kamu. Jangan lupa dikerjakan ya!`,
+        tipe: 'tugas_baru',
+        status_baca: false
+      }));
+
+      // 4. Masukkan ke tabel Notifikasi sekaligus (bulk insert)
+      const { error: notifErr } = await supabaseAdmin
+        .from('Notifikasi')
+        .insert(kumpulanNotif);
+
+      if (notifErr) console.error("Gagal kirim notif:", notifErr.message);
+    }
+
+    return res.status(201).json({ message: 'Tugas dan notifikasi berhasil dibuat!' });
+
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+};

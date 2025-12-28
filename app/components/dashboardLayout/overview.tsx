@@ -82,8 +82,7 @@ const Overview: React.FC = () => {
           return;
         }
 
-        // ✅ nama & fakultas: tetap dari dashboard/profile (biar gak berubah)
-        // ✅ foto: ambil dari me/profile (biar sama kayak settings)
+        // Mengambil data secara paralel dari 3 endpoint
         const [dashProf, meProf, ov] = await Promise.all([
           apiGet<DashProfile>("/dashboard/profile", token),
           apiGet<MeProfile>("/me/profile", token),
@@ -94,9 +93,10 @@ const Overview: React.FC = () => {
         setFotoProfil((meProf?.foto_profil || "").trim());
         setImgError(false);
 
+        // Sinkronisasi statistik dengan data backend terbaru
         setStatistics({
           totalClasses: Number(ov?.total_kelas ?? 0),
-          completedTasks: Number(ov?.tugas_selesai ?? 0),
+          completedTasks: Number(ov?.tugas_selesai ?? 0), // Menampilkan jumlah pengumpulan
           progress: Number(ov?.progress ?? 0),
         });
       } catch (e: any) {
@@ -134,17 +134,15 @@ const Overview: React.FC = () => {
 
   const fullName = profile?.nama_lengkap?.trim() || "Siswa";
   const initial = fullName.charAt(0).toUpperCase();
-
-  // ✅ fakultas tetap dari dashboard/profile
   const faculty = profile?.nama_fakultas?.trim() || "Fakultas Belum Terdaftar";
-
   const showImage = fotoProfil !== "" && !imgError;
 
   return (
     <div className="w-full">
       <h1 className="text-3xl font-semibold text-black mb-3">Overview</h1>
 
-      <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-6 mb-6 flex flex-col md:flex-row items-center gap-3 shadow-sm">
+      {/* Profil Card - Tetap w-[600px] */}
+      <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-6 mb-6 flex flex-col md:flex-row items-center gap-6 shadow-sm">
         <div className="flex-shrink-0">
           <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-gray-100 overflow-hidden relative flex items-center justify-center">
             {showImage ? (
@@ -172,6 +170,7 @@ const Overview: React.FC = () => {
         </div>
       </div>
 
+      {/* Statistics Cards - Tetap w-[600px] dan h-32 */}
       <div className="flex justify-between w-[600px] gap-6">
         <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
           <span className="text-gray-500 font-medium text-sm">Kelas Diikuti</span>

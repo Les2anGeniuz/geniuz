@@ -24,6 +24,8 @@ import adminMateriRoutes from './routes/adminMateri.js'
 import adminTugasRoutes from './routes/adminTugas.js'
 import adminSiswaRoutes from './routes/adminSiswa.js'
 import adminAnalyticsRoutes from './routes/adminAnalytics.js'
+import notifikasiRoutes from './routes/notifikasi.js'
+import checkDeadlines from './services/notificationWorker.js';
 
 dotenv.config()
 
@@ -55,6 +57,9 @@ app.use('/api/admin/tugas', adminTugasRoutes)
 app.use('/api/admin/siswa', adminSiswaRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/admin/analytics', adminAnalyticsRoutes)
+app.use('/api/notifikasi', notifikasiRoutes)
+
+checkDeadlines();
 
 app.listen(process.env.PORT || 5000, () => {
   console.log(`Backend ready on http://localhost:${process.env.PORT || 5000}`)

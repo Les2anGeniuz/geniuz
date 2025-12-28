@@ -153,7 +153,7 @@ const ClassCards: React.FC = () => {
             const idF = k.id_Fakultas ?? "11";
             const idK = k.id_Kelas ?? "";
             const href = `/Kelas/${idF}/${idK}`;
-            const cover = (k.thumbnail_url || "").trim() || "/Frame 2610763.svg"; // Default image if no URL
+            const cover = (k.thumbnail_url || "").trim() || "/Frame 2610785.svg"; // Default image if no URL
 
             let mentorNama = (k.mentor_nama || "").trim();
             let mentorFoto = (k.mentor_foto || "").trim();

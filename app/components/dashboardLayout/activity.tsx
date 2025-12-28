@@ -1,180 +1,129 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { MessageSquare, Plus, Flag, CheckCircle2 } from "lucide-react";
 
 interface Activity {
-  id: number;
+  type: "materi" | "deadline" | "submit";
   title: string;
-  type: string; // feedback, materi, reminder, completed
-  created_at: string;
+  timestamp: string;
 }
+
+const TOKEN_KEY = "access_token";
+const getToken = () =>
+  typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY);
 
 const Activities: React.FC = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
+  const API_BASE = useMemo(
+    () => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api",
+    []
+  );
+
   useEffect(() => {
     const fetchActivities = async () => {
+      const token = getToken();
+      if (!token) return;
+
       try {
-        // Mengambil data aktivitas dengan fetch ke API yang sesuai
-        const response = await fetch("/api/me/activities");
+        // Mengambil data dari endpoint /dashboard/activity
+        const response = await fetch(`${API_BASE}/dashboard/activity`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const data = await response.json();
 
         if (response.ok) {
-          setActivities(data.data);
-        } else {
-          console.error("Error fetching activities:", data.message);
+          // Menampilkan log untuk memastikan 10 data sudah masuk
+          console.log("10 Aktivitas Terbaru:", data.activity);
+          setActivities(data.activity || []);
         }
       } catch (error) {
-        console.error("Error:", error);
+        console.error("Error fetching activities:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchActivities();
-  }, []);
+  }, [API_BASE]);
 
-  if (loading) return <div className="text-gray-400">Sedang memuat...</div>;
+  const renderActivityIcon = (activity: Activity) => {
+    if (activity.type === "submit" && activity.title.toLowerCase().includes("feedback")) {
+      return (
+        <div className="w-9 h-9 rounded-full bg-[#00CCFF] flex items-center justify-center text-white shrink-0">
+          <MessageSquare size={16} fill="white" />
+        </div>
+      );
+    }
+
+    switch (activity.type) {
+      case "materi":
+        return (
+          <div className="w-9 h-9 rounded-full bg-[#FFFF00] flex items-center justify-center text-white shrink-0">
+            <Plus size={20} strokeWidth={3} color="white" />
+          </div>
+        );
+      case "deadline":
+        return (
+          <div className="w-9 h-9 rounded-full bg-[#FF0000] flex items-center justify-center text-white shrink-0">
+            <Flag size={16} fill="white" />
+          </div>
+        );
+      case "submit":
+        return (
+          <div className="w-9 h-9 rounded-full bg-[#00FF00] flex items-center justify-center text-white shrink-0">
+            <CheckCircle2 size={16} color="white" strokeWidth={3} />
+          </div>
+        );
+      default:
+        return <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0" />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="w-[600px] h-32 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
-      <h2 className="text-3xl font-semibold text-black mb-4">Aktivitas Terbaru</h2>
+      <h1 className="text-3xl font-semibold text-black mb-3">Aktivitas Terbaru</h1>
 
-      <div className="w-full">
-        {activities.length === 0 ? (
-          // Empty state jika tidak ada aktivitas
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm text-center min-h-[325px] flex flex-col items-center justify-center w-full">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-8 w-8"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
+      {/* Kontainer tetap h-[330px] & w-[600px] sesuai permintaan sebelumnya */}
+      <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-5 shadow-sm h-[330px] flex flex-col">
+        <div className="flex-1 overflow-y-auto pr-2 space-y-4 scrollbar-thin scrollbar-thumb-gray-200">
+          {activities.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
+              <p className="text-gray-400 text-xs">Belum ada aktivitas terbaru</p>
             </div>
-            <p className="text-gray-500 font-medium">Belum ada aktivitas terbaru</p>
-            <p className="text-gray-400 text-sm mt-1">Aktivitas belajar kamu akan muncul di sini</p>
-          </div>
-        ) : (
-          // Tampilan jika ada data aktivitas
-          <div className="flex flex-col gap-4">
-            {activities.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-center gap-4 bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
-              >
-                {/* Icon berdasarkan tipe aktivitas */}
-                <div
-                  className={`w-12 h-12 flex-shrink-0 flex justify-center items-center rounded-full ${
-                    activity.type === "feedback"
-                      ? "bg-blue-100 text-blue-600"
-                      : activity.type === "materi"
-                      ? "bg-yellow-100 text-yellow-600"
-                      : activity.type === "reminder"
-                      ? "bg-red-100 text-red-600"
-                      : activity.type === "completed"
-                      ? "bg-green-100 text-green-600"
-                      : "bg-gray-100 text-gray-500"
-                  }`}
-                >
-                  {/* Menampilkan icon sesuai tipe */}
-                  {activity.type === "feedback" && (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                      />
-                    </svg>
-                  )}
-
-                  {activity.type === "materi" && (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                      />
-                    </svg>
-                  )}
-
-                  {activity.type === "reminder" && (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                      />
-                    </svg>
-                  )}
-
-                  {activity.type === "completed" && (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  )}
-                </div>
+          ) : (
+            activities.map((activity, index) => (
+              <div key={index} className="flex items-center gap-3">
+                {renderActivityIcon(activity)}
 
                 <div className="flex flex-col overflow-hidden">
-                  <span className="text-sm font-bold truncate text-gray-800">
+                  <h3 className="text-sm font-bold text-[#09090b] leading-tight truncate">
                     {activity.title}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {/* Format tanggal sederhana */}
-                    {new Date(activity.created_at)
-                      .toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                  </h3>
+                  <span className="text-[11px] text-gray-500 font-medium">
+                    {new Date(activity.timestamp).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }).replace(',', ' -')} WIB
                   </span>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

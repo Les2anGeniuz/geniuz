@@ -51,7 +51,8 @@ const hashString = (s: string) => {
 };
 
 const pickMentorById = (mentors: MentorRow[], idMentor: any) =>
-  mentors.find((x) => String(x.id_Mentor ?? "") === String(idMentor ?? "")) || null;
+  mentors.find((x) => String(x.id_Mentor ?? "") === String(idMentor ?? "")) ||
+  null;
 
 const pickMentorForClass = (mentors: MentorRow[], idFakultas: any, idKelas: any, idMentor?: any) => {
   if (idMentor != null && String(idMentor) !== "") {
@@ -152,7 +153,7 @@ const ClassCards: React.FC = () => {
             const idF = k.id_Fakultas ?? "11";
             const idK = k.id_Kelas ?? "";
             const href = `/Kelas/${idF}/${idK}`;
-            const cover = (k.thumbnail_url || "").trim() || "https://placehold.co/600x360";
+            const cover = (k.thumbnail_url || "").trim() || "/Frame 2610763.svg"; // Default image if no URL
 
             let mentorNama = (k.mentor_nama || "").trim();
             let mentorFoto = (k.mentor_foto || "").trim();
@@ -173,7 +174,12 @@ const ClassCards: React.FC = () => {
               >
                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition h-full flex flex-col cursor-pointer">
                   <div className="relative w-full aspect-[16/9] bg-gray-100 flex-shrink-0">
-                    <Image src={cover} alt={k.nama_kelas || "Kelas"} fill className="object-cover" />
+                    <Image
+                      src={cover}
+                      alt={k.nama_kelas || "Kelas"}
+                      fill
+                      className="object-cover"
+                    />
                   </div>
 
                   <div className="p-5 flex flex-col flex-1">

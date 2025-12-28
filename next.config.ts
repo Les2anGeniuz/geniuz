@@ -10,11 +10,11 @@ const nextConfig: NextConfig = {
     ];
   },
 
-images: {
+  images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'sesvblqrcbdmnkfvugtk.supabase.co', 
+        hostname: 'sesvblqrcbdmnkfvugtk.supabase.co',
         port: '',
         pathname: '/storage/v1/object/public/**',
       },
@@ -28,9 +28,13 @@ images: {
         protocol: 'https',
         hostname: 'placehold.co',
       },
+      // Menambahkan Unsplash
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com', // Menambahkan Unsplash sebagai domain yang valid
+      },
     ],
   },
 };
-
 
 export default nextConfig;

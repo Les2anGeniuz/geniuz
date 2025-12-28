@@ -24,6 +24,8 @@ import adminMateriRoutes from './routes/adminMateri.js'
 import adminTugasRoutes from './routes/adminTugas.js'
 import adminSiswaRoutes from './routes/adminSiswa.js'
 import adminAnalyticsRoutes from './routes/adminAnalytics.js'
+import adminActivitiesRoutes from './routes/adminActivities.js'
+import adminPengumpulanTugasRoutes from './routes/adminPengumpulanTugas.js';
 
 dotenv.config()
 
@@ -52,9 +54,18 @@ app.use('/api/admin/mentor', adminMentorRoutes)
 app.use('/api/admin/kelas', adminKelasRoutes)
 app.use('/api/admin/materi', adminMateriRoutes)
 app.use('/api/admin/tugas', adminTugasRoutes)
+app.use('/api/admin', adminPengumpulanTugasRoutes)
 app.use('/api/admin/siswa', adminSiswaRoutes)
-app.use('/api/admin', adminRoutes)
+
+
+
+// --- Penting: Mount analytics agar endpoint /api/admin/analytics aktif ---
+
 app.use('/api/admin/analytics', adminAnalyticsRoutes)
+app.use('/api/admin/activities', adminActivitiesRoutes)
+
+// Mount adminRoutes PALING BAWAH agar tidak menimpa /api/admin/xxx
+app.use('/api/admin', adminRoutes)
 
 app.listen(process.env.PORT || 5000, () => {
   console.log(`Backend ready on http://localhost:${process.env.PORT || 5000}`)

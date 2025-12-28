@@ -32,8 +32,15 @@ export async function POST(req: Request) {
     { expiresIn: "7d" }
   );
 
-  // Set cookie (optional, for legacy)
+  // Set cookie admin_token agar bisa diakses server component
   const cookieStore = await cookies();
+  cookieStore.set("admin_token", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    path: "/",
+  });
+  // (opsional: tetap set admin_id jika perlu)
   cookieStore.set("admin_id", String(admin.id), {
     httpOnly: true,
     secure: true,

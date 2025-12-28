@@ -1,3 +1,32 @@
+// Pie chart: distribusi siswa per fakultas
+export const siswaPerFakultas = async (req, res) => {
+  try {
+    // Ambil semua pendaftaran yang sudah punya id_Fakultas
+    const { data: daftar, error: daftarError } = await supabaseAdmin
+      .from('Pendaftaran')
+      .select('id_Fakultas')
+      .not('id_Fakultas', 'is', null);
+    if (daftarError) return res.status(500).json({ error: daftarError.message });
+    const fakultasIds = [...new Set((daftar || []).map(d => d.id_Fakultas).filter(Boolean))];
+    if (!fakultasIds.length) return res.json({ labels: [], counts: [] });
+    // Ambil nama fakultas
+    const { data: fakultasRows, error: fakultasError } = await supabaseAdmin
+      .from('Fakultas')
+      .select('id_Fakultas, nama_fakultas')
+      .in('id_Fakultas', fakultasIds);
+    if (fakultasError) return res.status(500).json({ error: fakultasError.message });
+    // Hitung jumlah siswa per fakultas
+    const countMap = {};
+    (daftar || []).forEach(d => {
+      if (d.id_Fakultas) countMap[d.id_Fakultas] = (countMap[d.id_Fakultas] || 0) + 1;
+    });
+    const labels = fakultasRows.map(f => f.nama_fakultas);
+    const counts = fakultasRows.map(f => countMap[f.id_Fakultas] || 0);
+    return res.json({ labels, counts });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || 'Internal server error' });
+  }
+};
 import { supabaseAdmin } from '../services/supabase.js'
 
 export const listAdminSiswa = async (req, res) => {

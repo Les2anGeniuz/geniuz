@@ -24,6 +24,7 @@ import adminMateriRoutes from './routes/adminMateri.js'
 import adminTugasRoutes from './routes/adminTugas.js'
 import adminSiswaRoutes from './routes/adminSiswa.js'
 import adminAnalyticsRoutes from './routes/adminAnalytics.js'
+import adminAnalyticsPieRoutes from './routes/adminAnalyticsPie.js'
 import adminActivitiesRoutes from './routes/adminActivities.js'
 import adminPengumpulanTugasRoutes from './routes/adminPengumpulanTugas.js';
 
@@ -62,6 +63,7 @@ app.use('/api/admin/siswa', adminSiswaRoutes)
 // --- Penting: Mount analytics agar endpoint /api/admin/analytics aktif ---
 
 app.use('/api/admin/analytics', adminAnalyticsRoutes)
+app.use('/api/admin', adminAnalyticsPieRoutes)
 app.use('/api/admin/activities', adminActivitiesRoutes)
 
 // Mount adminRoutes PALING BAWAH agar tidak menimpa /api/admin/xxx

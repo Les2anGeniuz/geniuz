@@ -1,16 +1,253 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import SidebarAdmin from "../../components/layouts/sidebarAdmin";
 import Navbar from "../../components/layouts/navbarAdmin";
-
-
 import DashboardStats from "../../components/dashboards/stats";
 import DashboardClasses from "../../components/dashboards/classes";
 import DashboardActivities from "../../components/dashboards/activities";
 
+// Tambahan untuk chart
+import { Pie, Bar, Line } from 'react-chartjs-2';
+import { Chart, ArcElement, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend } from 'chart.js';
+Chart.register(ArcElement, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend);
+// Pie Chart: Distribusi Siswa per Fakultas (ambil data dari API fakultas & siswa, agregasi di frontend)
+const SiswaPerFakultasPieChart = () => {
+  const [chartData, setChartData] = useState<{ labels: string[]; counts: number[] }>({ labels: [], counts: [] });
+  const [loading, setLoading] = useState(true);
 
-import { useEffect, useState } from "react";
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+        if (!token) return setLoading(false);
+        // Ambil semua fakultas
+        const fakultasRes = await fetch(`${backendUrl}/api/admin/fakultas`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const fakultasJson = await fakultasRes.json();
+        const fakultasList: any[] = Array.isArray(fakultasJson.fakultas) ? fakultasJson.fakultas : (fakultasJson.data || []);
+        // Ambil semua siswa
+        const siswaRes = await fetch(`${backendUrl}/api/admin/siswa`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const siswaJson = await siswaRes.json();
+        const siswaList: any[] = Array.isArray(siswaJson.siswa) ? siswaJson.siswa : (siswaJson.data || []);
+        // Hitung jumlah siswa per fakultas (berdasarkan nama)
+        const countMap: Record<string, number> = {};
+        siswaList.forEach((s: any) => {
+          const namaFakultas = s.fakultas;
+          if (namaFakultas) countMap[namaFakultas] = (countMap[namaFakultas] || 0) + 1;
+        });
+        const labels: string[] = fakultasList.map((f: any) => f.nama_fakultas);
+        const counts: number[] = labels.map((nama: string) => countMap[nama] || 0);
+        setChartData({ labels, counts });
+      } catch {
+        setChartData({ labels: [], counts: [] });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const colors = [
+    '#2563eb', '#0ea5e9', '#1e293b', '#facc15', '#e0e7ef', '#f8fafc', '#60a5fa', '#dbeafe', '#fef9c3', '#fff'
+  ];
+
+  return (
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6 flex flex-col items-center justify-center w-full h-full">
+      <h2 className="text-lg font-semibold text-[#002D5B] mb-4">Distribusi Siswa per Fakultas</h2>
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <div className="w-full" style={{ aspectRatio: '1 / 1', minHeight: 0 }}>
+          <Pie
+            data={{
+              labels: chartData.labels,
+              datasets: [{
+                data: chartData.counts,
+                backgroundColor: colors.slice(0, chartData.labels.length),
+              }]
+            }}
+            options={{
+              plugins: { legend: { position: 'bottom' } },
+              maintainAspectRatio: false,
+              responsive: true,
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Bar Chart: Siswa Baru per Bulan
+const NewStudentsBarChart = ({ horizontal = false }: { horizontal?: boolean }) => {
+  const [chartData, setChartData] = useState<{ months: string[]; counts: number[] }>({ months: [], counts: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+        if (!token) return setLoading(false);
+        const res = await fetch(`${backendUrl}/api/admin/new-students-monthly`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        setChartData({
+          months: json.months ?? [],
+          counts: json.counts ?? [],
+        });
+      } catch {
+        setChartData({ months: [], counts: [] });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  return (
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6 h-[350px] w-full">
+      <h2 className="text-lg font-semibold text-[#002D5B] mb-4">Siswa Baru per Bulan</h2>
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <div className="w-full h-[260px]">
+          <Bar
+            data={{
+              labels: chartData.months,
+              datasets: [{
+                label: 'Siswa Baru',
+                data: chartData.counts,
+                backgroundColor: '#2563eb',
+                borderRadius: 6,
+                maxBarThickness: 32,
+              }]
+            }}
+            options={{
+              indexAxis: horizontal ? 'y' : 'x',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: horizontal
+                ? { x: { beginAtZero: true } }
+                : {
+                    y: { beginAtZero: true },
+                    x: {
+                      ticks: {
+                        font: { size: 11 },
+                        maxRotation: 40,
+                        minRotation: 20,
+                        color: '#334155',
+                        autoSkip: false,
+                      },
+                    },
+                  }
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Line Chart: Revenue Bulanan (fetch dari backend)
+const RevenueLineChart = () => {
+  const [chartData, setChartData] = useState<{ months: string[]; revenues: number[] }>({ months: [], revenues: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRevenue = async () => {
+      setLoading(true);
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+        if (!token) return setLoading(false);
+        const res = await fetch(`${backendUrl}/api/admin/revenue-monthly`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        // Buat array bulan Jan–Des tahun ini
+        const now = new Date();
+        const year = now.getFullYear();
+        const monthNames = [
+          'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+          'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+        ];
+        const months = monthNames.map(m => `${m} ${year}`);
+        // Map data backend ke array bulan, isi 0 jika tidak ada
+        const revenueMap: Record<string, number> = {};
+        (json.months || []).forEach((m: string, i: number) => { revenueMap[m] = json.revenues[i]; });
+        const revenues: number[] = months.map((m: string) => revenueMap[m] || 0);
+        setChartData({ months, revenues });
+      } catch {
+        setChartData({ months: [], revenues: [] });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRevenue();
+  }, []);
+
+  // Aurora-like gradient for Chart.js
+  const chartRef = React.useRef<any>(null);
+  // Aurora gradient
+  const getAuroraGradient = (ctx: CanvasRenderingContext2D, area: any) => {
+    const gradient = ctx.createLinearGradient(0, area.top, 0, area.bottom);
+    gradient.addColorStop(0, 'rgba(37,99,235,0.35)'); // blue
+    gradient.addColorStop(0.3, 'rgba(139,92,246,0.18)'); // purple
+    gradient.addColorStop(0.7, 'rgba(16,185,129,0.13)'); // green
+    gradient.addColorStop(1, 'rgba(255,255,255,0.05)'); // fade to white
+    return gradient;
+  };
+
+
+  const data = {
+    labels: chartData.months,
+    datasets: [
+      {
+        label: 'Revenue',
+        data: chartData.revenues,
+        borderColor: '#2563eb',
+        borderWidth: 3,
+        backgroundColor: (context: any) => {
+          const chart = context.chart;
+          const {ctx, chartArea} = chart;
+          if (!chartArea) return 'rgba(37,99,235,0.1)';
+          return getAuroraGradient(ctx, chartArea);
+        },
+        tension: 0.3,
+        fill: true,
+        pointBackgroundColor: '#2563eb',
+        pointBorderColor: '#2563eb',
+      }
+    ]
+  };
+
+  return (
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
+      <h2 className="text-lg font-semibold text-[#002D5B] mb-4">Revenue Bulanan</h2>
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <Line
+          ref={chartRef}
+          data={data}
+          options={{
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+          }}
+          // no shadow plugin
+        />
+      )}
+    </div>
+  );
+};
 
 const Calendar = () => {
   const today = new Date();
@@ -62,7 +299,12 @@ const Calendar = () => {
 
 // Revenue & Finance Section
 const RevenueFinance: React.FC = () => {
-  const [data, setData] = useState({
+  const [data, setData] = useState<{
+    totalRevenue: number;
+    paymentIssues: any[];
+    subscriptionStatus: { aktif: number; expired: number; akanExpired: number };
+    loading: boolean;
+  }>({
     totalRevenue: 0,
     paymentIssues: [],
     subscriptionStatus: { aktif: 0, expired: 0, akanExpired: 0 },
@@ -107,8 +349,8 @@ const RevenueFinance: React.FC = () => {
             <div className="text-green-600 text-sm">Tidak ada masalah pembayaran</div>
           ) : (
             <ul className="text-xs text-red-600 space-y-1 max-h-20 overflow-y-auto">
-              {data.paymentIssues.map((p: any) => (
-                <li key={p.id_Pembayaran || p.tanggal_bayar}>
+              {data.paymentIssues.map((p: any, idx: number) => (
+                <li key={p.id_Pembayaran || p.tanggal_bayar || idx}>
                   {p.status_pembayaran} - Rp{Number(p.jumlah_bayar).toLocaleString('id-ID')} ({new Date(p.tanggal_bayar).toLocaleDateString('id-ID')})
                 </li>
               ))}
@@ -203,72 +445,111 @@ const KPICards: React.FC = () => {
     fetchKPI();
   }, []);
 
+  // Icon SVGs for each KPI
+  const icons = [
+    <svg key="kelas" className="w-7 h-7 text-[#2563eb]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 10h16"/></svg>,
+    <svg key="siswa" className="w-7 h-7 text-[#1e293b]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>,
+    <svg key="mentor" className="w-7 h-7 text-[#facc15]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M2 20v-2a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v2"/></svg>,
+    <svg key="fakultas" className="w-7 h-7 text-[#0ea5e9]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 3v4M8 3v4"/></svg>,
+    <svg key="materi" className="w-7 h-7 text-[#2563eb]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 2v4M16 2v4"/></svg>,
+    <svg key="tugas" className="w-7 h-7 text-[#facc15]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12h6"/></svg>,
+  ];
+
+  const cardData = [
+    { label: 'Total Kelas', value: loading ? '-' : kpi.totalKelas, icon: icons[0] },
+    { label: 'Siswa Aktif', value: loading ? '-' : kpi.siswaAktif, icon: icons[1] },
+    { label: 'Total Mentor', value: loading ? '-' : kpi.totalMentor, icon: icons[2] },
+    { label: 'Total Fakultas', value: loading ? '-' : kpi.totalFakultas, icon: icons[3] },
+    { label: 'Total Materi', value: loading ? '-' : kpi.totalMateri, icon: icons[4] },
+    { label: 'Total Tugas', value: loading ? '-' : kpi.totalTugas, icon: icons[5] },
+  ];
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <p className="text-sm font-medium text-gray-500">Total Kelas</p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">{loading ? '-' : kpi.totalKelas}</p>
-      </div>
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <p className="text-sm font-medium text-gray-500">Siswa Aktif</p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">{loading ? '-' : kpi.siswaAktif}</p>
-      </div>
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <p className="text-sm font-medium text-gray-500">Total Mentor</p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">{loading ? '-' : kpi.totalMentor}</p>
-      </div>
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <p className="text-sm font-medium text-gray-500">Total Fakultas</p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">{loading ? '-' : kpi.totalFakultas}</p>
-      </div>
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <p className="text-sm font-medium text-gray-500">Total Materi</p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">{loading ? '-' : kpi.totalMateri}</p>
-      </div>
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <p className="text-sm font-medium text-gray-500">Total Tugas</p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">{loading ? '-' : kpi.totalTugas}</p>
-      </div>
+      {cardData.map((card, i) => (
+        <div
+          key={card.label}
+          className="relative group bg-[#f7f7f8] border border-[#d1d5db] hover:border-[#2563eb] rounded-xl p-5 transition-all duration-200 hover:bg-[#e8f0fa] min-h-[120px] flex flex-col justify-between cursor-pointer shadow-none"
+        >
+          {/* Judul pojok kiri atas */}
+          <div className="flex justify-between items-start">
+            <span className="font-semibold text-base md:text-lg text-[#002D5B] group-hover:text-[#2563eb] leading-tight">{card.label}</span>
+          </div>
+          {/* Angka pojok kiri bawah dan icon pojok kanan bawah */}
+          <div className="flex items-end justify-between mt-8">
+            <span className="font-bold text-2xl md:text-3xl text-[#1e293b] group-hover:text-[#2563eb]">{card.value}</span>
+            <span className="self-end ml-2 mb-1 opacity-90 text-[#2563eb]">{card.icon}</span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
 
 export default function AdminDashboard() {
+  // Ambil data subscriptionStatus dari RevenueFinance (atau fetch ulang jika ingin lebih real-time)
+  const [subscriptionStatus, setSubscriptionStatus] = useState({ aktif: 0, expired: 0, akanExpired: 0 });
+  useEffect(() => {
+    const fetchStatus = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+      if (!token) return;
+      const res = await fetch(`${backendUrl}/api/admin/analytics`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      setSubscriptionStatus(json.kpis?.subscriptionStatus ?? { aktif: 0, expired: 0, akanExpired: 0 });
+    };
+    fetchStatus();
+  }, []);
+
   return (
-    <div className="flex min-h-screen bg-[#F3F6FA]">
-      {/* Sidebar kiri */}
+    <div className="flex min-h-screen bg-[#F8FAFC]">
+      {/* Sidebar tetap */}
       <SidebarAdmin />
 
-      {/* Konten utama kanan */}
-      <div className="flex-1 flex flex-col ml-64">
-        {/* Navbar di atas */}
-        <div className="sticky top-0 z-50 bg-white shadow-sm h-16 flex items-center">
-          <Navbar />
-        </div>
+      <div className="flex-1 flex flex-col ml-64 transition-all duration-300 pt-16">
+        {/* Use only the fixed Navbar, remove sticky wrapper */}
+        <Navbar />
 
-        {/* Isi halaman */}
-        <main className="flex-1 px-8 pt-6 pb-8 space-y-6">
-          {/* KPI Cards */}
-          <KPICards />
+        <main className="relative flex-1 p-8 overflow-y-auto">
+            <div className="mb-6 mt-8">
+            <h1 className="text-3xl font-bold text-[#002D5B]">Dashboard Overview</h1>
+            <p className="text-sm text-gray-500 mt-1">Welcome back, here's what's happening.</p>
+            </div>
+          {/* 1. Top KPI Cards */}
+          <div className="relative z-10 mt-4">
+            <KPICards />
+          </div>
 
-          {/* Main Content Grid */}
+          {/* 2. Main Analytics Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {/* Left: Revenue Chart (Takes 2 columns) */}
+            <div className="lg:col-span-2 flex flex-col gap-6">
+              <RevenueLineChart />
+              <NewStudentsBarChart />
+            </div>
+
+            {/* Right: Calendar + Pie Chart (Takes 1 column) */}
+            <div className="flex flex-col gap-6">
+                <Calendar />
+                <SiswaPerFakultasPieChart />
+            </div>
+          </div>
+
+          {/* 3. Bottom Section: Recent Activity & Classes */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - 2/3 width */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Kelas Terbaru */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h2 className="text-lg font-semibold text-[#002D5B] mb-4">Kelas Terbaru</h2>
-                <DashboardClasses />
-              </div>
+            <div className="lg:col-span-2">
+                <div className="bg-white rounded-2xl p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100 min-h-[400px]">
+                    <div className="flex justify-between items-center mb-6">
+                        <h4 className="text-lg font-bold text-slate-800">Recent Classes</h4>
+                        <a href="/admin/kelas" className="text-sm text-blue-600 font-medium hover:underline">View All</a>
+                    </div>
+                    <div className="overflow-hidden">
+                        <DashboardClasses />
+                    </div>
+                </div>
             </div>
-
-            {/* Right Column - 1/3 width */}
-            <div className="space-y-6">
-              {/* Calendar */}
-              <Calendar />
-              {/* Activities di bawah Calendar */}
-              <DashboardActivities />
-            </div>
+            <DashboardActivities />
           </div>
 
         </main>

@@ -1,3 +1,80 @@
+// Siswa baru per bulan untuk bar chart
+export const newStudentsMonthly = async (req, res) => {
+  try {
+    const now = new Date();
+    const year = now.getFullYear();
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    const months = monthNames.map(m => `${m} ${year}`);
+
+    // Ambil semua pendaftaran tahun ini
+    const start = new Date(year, 0, 1);
+    const end = new Date(year + 1, 0, 1);
+    const { data, error } = await supabaseAdmin
+      .from('Pendaftaran')
+      .select('id_Pendaftaran, tanggal_pendaftaran')
+      .gte('tanggal_pendaftaran', start.toISOString())
+      .lt('tanggal_pendaftaran', end.toISOString());
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Group by month index
+    const monthly = Array(12).fill(0);
+    data.forEach((row) => {
+      const date = new Date(row.tanggal_pendaftaran);
+      if (date.getFullYear() === year) {
+        const idx = date.getMonth();
+        monthly[idx] += 1;
+      }
+    });
+    res.json({
+      months,
+      counts: monthly
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+// Revenue bulanan untuk line chart
+export const revenueMonthly = async (req, res) => {
+  try {
+    const now = new Date();
+    const year = now.getFullYear();
+    // Buat array label bulan Jan–Des sesuai frontend
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    const months = monthNames.map(m => `${m} ${year}`);
+
+    // Ambil semua pembayaran tahun ini
+    const start = new Date(year, 0, 1);
+    const end = new Date(year + 1, 0, 1);
+    const { data, error } = await supabaseAdmin
+      .from('Pembayaran')
+      .select('jumlah_bayar, tanggal_bayar')
+      .gte('tanggal_bayar', start.toISOString())
+      .lt('tanggal_bayar', end.toISOString());
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Group by month index
+    const monthly = Array(12).fill(0);
+    data.forEach((row) => {
+      const date = new Date(row.tanggal_bayar);
+      if (date.getFullYear() === year) {
+        const idx = date.getMonth(); // 0-based
+        monthly[idx] += Number(row.jumlah_bayar || 0);
+      }
+    });
+    res.json({
+      months,
+      revenues: monthly
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
 import { createClient } from '@supabase/supabase-js'
 
 // Untuk validasi admin

@@ -46,7 +46,7 @@ export default function SiswaPage() {
     limit: 15,
   });
 
-  // Stats dihapus dari UI, tapi struktur state dibiarkan jika nanti ingin dipakai lagi.
+
   const [stats, setStats] = useState<Stats>({
     total: 0,
     aktif: 0,
@@ -106,7 +106,6 @@ export default function SiswaPage() {
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backendUrl, search, status, page]);
 
   return (

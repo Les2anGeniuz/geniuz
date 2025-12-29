@@ -6,12 +6,9 @@ import Navbar from "../../components/layouts/navbarAdmin";
 import DashboardStats from "../../components/dashboards/stats";
 import DashboardClasses from "../../components/dashboards/classes";
 import DashboardActivities from "../../components/dashboards/activities";
-
-// Tambahan untuk chart
 import { Pie, Bar, Line } from 'react-chartjs-2';
 import { Chart, ArcElement, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend } from 'chart.js';
 Chart.register(ArcElement, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend);
-// Pie Chart: Distribusi Siswa per Fakultas (ambil data dari API fakultas & siswa, agregasi di frontend)
 const SiswaPerFakultasPieChart = () => {
   const [chartData, setChartData] = useState<{ labels: string[]; counts: number[] }>({ labels: [], counts: [] });
   const [loading, setLoading] = useState(true);
@@ -22,19 +19,16 @@ const SiswaPerFakultasPieChart = () => {
       try {
         const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
         if (!token) return setLoading(false);
-        // Ambil semua fakultas
         const fakultasRes = await fetch(`${backendUrl}/api/admin/fakultas`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const fakultasJson = await fakultasRes.json();
         const fakultasList: any[] = Array.isArray(fakultasJson.fakultas) ? fakultasJson.fakultas : (fakultasJson.data || []);
-        // Ambil semua siswa
         const siswaRes = await fetch(`${backendUrl}/api/admin/siswa`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const siswaJson = await siswaRes.json();
         const siswaList: any[] = Array.isArray(siswaJson.siswa) ? siswaJson.siswa : (siswaJson.data || []);
-        // Hitung jumlah siswa per fakultas (berdasarkan nama)
         const countMap: Record<string, number> = {};
         siswaList.forEach((s: any) => {
           const namaFakultas = s.fakultas;
@@ -83,7 +77,6 @@ const SiswaPerFakultasPieChart = () => {
   );
 };
 
-// Bar Chart: Siswa Baru per Bulan
 const NewStudentsBarChart = ({ horizontal = false }: { horizontal?: boolean }) => {
   const [chartData, setChartData] = useState<{ months: string[]; counts: number[] }>({ months: [], counts: [] });
   const [loading, setLoading] = useState(true);
@@ -156,7 +149,6 @@ const NewStudentsBarChart = ({ horizontal = false }: { horizontal?: boolean }) =
   );
 };
 
-// Line Chart: Revenue Bulanan (fetch dari backend)
 const RevenueLineChart = () => {
   const [chartData, setChartData] = useState<{ months: string[]; revenues: number[] }>({ months: [], revenues: [] });
   const [loading, setLoading] = useState(true);
@@ -171,7 +163,6 @@ const RevenueLineChart = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();
-        // Buat array bulan Jan–Des tahun ini
         const now = new Date();
         const year = now.getFullYear();
         const monthNames = [
@@ -179,7 +170,6 @@ const RevenueLineChart = () => {
           'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
         ];
         const months = monthNames.map(m => `${m} ${year}`);
-        // Map data backend ke array bulan, isi 0 jika tidak ada
         const revenueMap: Record<string, number> = {};
         (json.months || []).forEach((m: string, i: number) => { revenueMap[m] = json.revenues[i]; });
         const revenues: number[] = months.map((m: string) => revenueMap[m] || 0);
@@ -193,15 +183,13 @@ const RevenueLineChart = () => {
     fetchRevenue();
   }, []);
 
-  // Aurora-like gradient for Chart.js
   const chartRef = React.useRef<any>(null);
-  // Aurora gradient
   const getAuroraGradient = (ctx: CanvasRenderingContext2D, area: any) => {
     const gradient = ctx.createLinearGradient(0, area.top, 0, area.bottom);
-    gradient.addColorStop(0, 'rgba(37,99,235,0.35)'); // blue
-    gradient.addColorStop(0.3, 'rgba(139,92,246,0.18)'); // purple
-    gradient.addColorStop(0.7, 'rgba(16,185,129,0.13)'); // green
-    gradient.addColorStop(1, 'rgba(255,255,255,0.05)'); // fade to white
+    gradient.addColorStop(0, 'rgba(37,99,235,0.35)');
+    gradient.addColorStop(0.3, 'rgba(139,92,246,0.18)');
+    gradient.addColorStop(0.7, 'rgba(16,185,129,0.13)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0.05)');
     return gradient;
   };
 
@@ -242,7 +230,6 @@ const RevenueLineChart = () => {
             plugins: { legend: { display: false } },
             scales: { y: { beginAtZero: true } }
           }}
-          // no shadow plugin
         />
       )}
     </div>
@@ -255,10 +242,10 @@ const Calendar = () => {
   const month = today.getMonth();
   const monthName = today.toLocaleString('default', { month: 'long' });
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const firstDay = new Date(year, month, 1).getDay();
   const daysArray = [];
   let week = [];
-  let dayOfWeek = (firstDay + 6) % 7; // convert to 0=Mon
+  let dayOfWeek = (firstDay + 6) % 7;
   for (let i = 0; i < dayOfWeek; i++) week.push(null);
   for (let d = 1; d <= daysInMonth; d++) {
     week.push(d);
@@ -297,7 +284,6 @@ const Calendar = () => {
   );
 };
 
-// Revenue & Finance Section
 const RevenueFinance: React.FC = () => {
   const [data, setData] = useState<{
     totalRevenue: number;
@@ -374,9 +360,7 @@ const RevenueFinance: React.FC = () => {
   );
 };
 
-// KPI Cards Section
 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
-
 const KPICards: React.FC = () => {
   const [kpi, setKpi] = useState({
     totalKelas: 0,
@@ -405,7 +389,6 @@ const KPICards: React.FC = () => {
           setLoading(false);
           return;
         }
-        // Fetch siswa, mentor, fakultas from their own APIs and count array length if countOnly is not supported
         const [siswaRes, mentorRes, fakultasRes] = await Promise.all([
           fetch(`${backendUrl}/api/admin/siswa`, { headers: { Authorization: `Bearer ${token}` } }),
           fetch(`${backendUrl}/api/admin/mentor`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -416,7 +399,6 @@ const KPICards: React.FC = () => {
           mentorRes.json(),
           fakultasRes.json(),
         ]);
-        // The rest can still use analytics for now
         const res = await fetch(`${backendUrl}/api/admin/analytics`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -445,7 +427,6 @@ const KPICards: React.FC = () => {
     fetchKPI();
   }, []);
 
-  // Icon SVGs for each KPI
   const icons = [
     <svg key="kelas" className="w-7 h-7 text-[#2563eb]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 10h16"/></svg>,
     <svg key="siswa" className="w-7 h-7 text-[#1e293b]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>,
@@ -471,7 +452,7 @@ const KPICards: React.FC = () => {
           key={card.label}
           className="relative group bg-[#f7f7f8] border border-[#d1d5db] hover:border-[#2563eb] rounded-xl p-5 transition-all duration-200 hover:bg-[#e8f0fa] min-h-[120px] flex flex-col justify-between cursor-pointer shadow-none"
         >
-          {/* Judul pojok kiri atas */}
+          {/* Judul*/}
           <div className="flex justify-between items-start">
             <span className="font-semibold text-base md:text-lg text-[#002D5B] group-hover:text-[#2563eb] leading-tight">{card.label}</span>
           </div>
@@ -487,7 +468,6 @@ const KPICards: React.FC = () => {
 };
 
 export default function AdminDashboard() {
-  // Ambil data subscriptionStatus dari RevenueFinance (atau fetch ulang jika ingin lebih real-time)
   const [subscriptionStatus, setSubscriptionStatus] = useState({ aktif: 0, expired: 0, akanExpired: 0 });
   useEffect(() => {
     const fetchStatus = async () => {

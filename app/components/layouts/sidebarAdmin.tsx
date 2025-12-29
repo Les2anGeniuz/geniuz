@@ -26,10 +26,8 @@ const SidebarAdmin = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      // 1. Try Supabase session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (session && session.user) {
-        // Try to get user info from Supabase table (try both 'User' and 'user')
         let userData = null;
         let supabaseError = null;
         try {
@@ -46,7 +44,6 @@ const SidebarAdmin = () => {
         } catch (err) {
           supabaseError = err;
         }
-        // If not found, try lowercase 'user'
         if (!userData) {
           try {
             const { data, error } = await supabase
@@ -77,8 +74,6 @@ const SidebarAdmin = () => {
           return;
         }
       }
-
-      // 2. Try backend JWT
       const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
       if (token) {
         try {
@@ -101,8 +96,6 @@ const SidebarAdmin = () => {
           console.error("Error fetching admin profile", err);
         }
       }
-
-      // 3. If neither, redirect to login
       setUser(null);
       router.push("/login");
     };
@@ -120,13 +113,10 @@ const SidebarAdmin = () => {
     { name: "Siswa", icon: UserLinear, href: "/admin/siswa" },
   ];
 
-  // ...existing code...
-
-  // Fungsi Logout (clear both Supabase and backend JWT)
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem("admin_token"); // Hapus token backend
-    router.push("/login"); // Redirect ke login
+    localStorage.removeItem("admin_token");
+    router.push("/login");
   };
 
   const isActive = (path: string) =>

@@ -16,8 +16,6 @@ export default async function SiswaDetailPage({ params }: { params: { idUser: st
     return <div className="p-10 text-center text-red-500">ID User tidak ditemukan di URL.</div>;
   }
 
-  // Helper to get API URL: absolute on server, relative on client
-  // Ganti ke alamat backend Express (misal: http://localhost:5000)
   const API_URL = "http://localhost:5000";
 
   // Fetch all biodata, pendaftaran, pembayaran from admin API
@@ -37,7 +35,6 @@ export default async function SiswaDetailPage({ params }: { params: { idUser: st
     const res = await fetch(`${API_URL}/api/fakultas/${idFakultas}`);
     if (!res.ok) return null;
     const json = await res.json();
-    // backend returns { fakultas: { id_Fakultas, nama_fakultas, ... } }
     return json?.fakultas?.nama_fakultas || null;
   }
 

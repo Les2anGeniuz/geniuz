@@ -73,11 +73,19 @@ const Sidebar: React.FC = () => {
         ]);
 
         const kelasRows = Array.isArray(kelasSaya?.kelas_saya) ? kelasSaya.kelas_saya : [];
-        const classes = kelasRows.map((k) => ({
-          label: (k?.nama_kelas || "").trim(),
-          idKelas: k.id_Kelas ?? "",
-          idFakultas: k.id_Fakultas ?? "11"
-        })).filter(c => c.label !== "");
+ 
+        const classes = kelasRows
+          .map((k) => ({
+            label: (k?.nama_kelas || "").trim(),
+            idKelas: k.id_Kelas ?? "",
+            idFakultas: k.id_Fakultas ?? "11"
+          }))
+          .filter(c => c.label !== "")
+          .sort((a, b) => {
+
+            return Number(a.idKelas) - Number(b.idKelas);
+
+          });
 
         setUserData({ 
           name: profile?.nama_lengkap?.trim() || "User", 
@@ -85,7 +93,7 @@ const Sidebar: React.FC = () => {
           classes 
         });
       } catch (e) {
-        console.error(e);
+        console.error("Error fetching sidebar data:", e);
       } finally {
         setIsLoading(false);
       }
@@ -103,16 +111,15 @@ const Sidebar: React.FC = () => {
 
   return (
     <div className="fixed top-0 left-0 h-full w-64 bg-white shadow-sm z-50 border-r border-gray-100 flex flex-col">
-      {/* CSS untuk menyembunyikan scrollbar */}
       <style dangerouslySetInnerHTML={{__html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
 
-      {/* 1. PROFIL - Disesuaikan agar pas di bawah Topbar */}
-      <div className="p-6 pt-24"> {/* pt-24 memberikan ruang agar profil tidak tertutup Topbar */}
+      {/* 1. PROFIL */}
+      <div className="p-6 pt-24">
         <div className="font-bold text-lg text-[#0a4378] truncate w-full" title={userData.name}>
-          {userData.name}
+          {isLoading ? "Loading..." : userData.name}
         </div>
         <div className="text-xs text-gray-400 mt-0.5">{userData.fakultas}</div>
       </div>
@@ -152,11 +159,14 @@ const Sidebar: React.FC = () => {
                 </li>
               );
             })}
+            {!isLoading && userData.classes.length === 0 && (
+              <li className="px-4 py-2 text-xs text-gray-400 italic">Tidak ada kelas</li>
+            )}
           </ul>
         </div>
       </div>
 
-      {/* 4. LOGOUT - Warna Gelap */}
+      {/* 4. LOGOUT */}
       <div className="p-4 border-t border-gray-50 mt-auto">
         <button onClick={handleLogout} className="flex items-center gap-3 py-2 px-4 rounded-lg transition-all text-sm font-semibold w-full text-gray-800 hover:bg-gray-100 cursor-pointer">
           <Image src="/logout.svg" alt="Logout" width={18} height={18} />

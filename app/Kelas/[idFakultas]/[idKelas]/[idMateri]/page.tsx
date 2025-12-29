@@ -1,291 +1,277 @@
-"use client"
+'use client';
 
-import { useEffect, useMemo, useState, use } from "react"
-import Link from "next/link"
-import { notFound } from "next/navigation"
+import { useState, useEffect, use } from 'react';
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowLeft, Bell, BookOpen, FileText, PlayCircle, CheckCircle, X } from 'lucide-react';
+import YouTube from 'react-youtube';
 
-import Sidebar from "../../../../components/dashboardLayout/sidebar"
-import Topbar from "../../../../components/dashboardLayout/topbar"
-import MateriCard from "../../../../components/Kelas2/Materi"
+import Sidebar from '../../../../components/dashboardLayout/sidebar';
+import { supabase as supabaseClient } from '../../../../../lib/supabaseClient';
 
-type MateriRow = {
-  id_Materi: number
-  id_Kelas: number
-  judul_materi: string
-  deskripsi?: string | null
-  tipe_konten?: string | null
-  link_konten?: string | null
-  urutan?: number | null
-  Tanggal_tayang?: string | null
-  thumbnail_url?: string | null
-}
+export default function DetailMateriPage({ params }: { params: Promise<{ idFakultas: string, idKelas: string, idMateri: string }> }) {
+  const resolvedParams = use(params);
+  const { idFakultas, idKelas, idMateri } = resolvedParams;
 
-type KelasRow = {
-  id_Kelas: number
-  nama_kelas: string
-}
+  const [materi, setMateri] = useState<any>(null);
+  const [allMateri, setAllMateri] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<number>(19); // Sesuaikan dengan ID user login
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
-function backendUrl() {
-  return process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
-}
-
-function pickData(payload: any) {
-  if (!payload) return null
-  if (payload.data !== undefined) return payload.data
-  if (payload.materi !== undefined) return payload.materi
-  if (payload.kelas !== undefined) return payload.kelas
-  return payload
-}
-
-async function fetchJson(url: string, signal: AbortSignal) {
-  const res = await fetch(url, { cache: "no-store", signal })
-  const json = await res.json().catch(() => null)
-  return { ok: res.ok, status: res.status, json }
-}
-
-async function fetchKelasSmart(idKelas: number, signal: AbortSignal) {
-  const base = backendUrl()
-  const candidates = [
-    `${base}/api/kelas/${idKelas}`,
-    `${base}/api/kelas?id=${idKelas}`,
-    `${base}/api/kelas?id_Kelas=${idKelas}`,
-  ]
-
-  for (const u of candidates) {
-    const r = await fetchJson(u, signal)
-    if (r.ok) {
-      const raw = pickData(r.json)
-      if (raw) {
-        const nama = raw.nama_kelas ?? raw.name ?? raw.nama ?? ""
-        if (nama) return { id_Kelas: idKelas, nama_kelas: String(nama) }
-        return { id_Kelas: idKelas, nama_kelas: "" }
-      }
-      return { id_Kelas: idKelas, nama_kelas: "" }
-    }
-    if (r.status !== 404) break
-  }
-
-  return null
-}
-
-function getYouTubeID(url: string) {
-  if (!url) return null
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
-  const match = url.match(regExp)
-  return match && match[2] && match[2].length === 11 ? match[2] : null
-}
-
-function toYouTubeEmbed(url: string) {
-  const id = getYouTubeID(url)
-  if (!id) return url
-  return `https://www.youtube.com/embed/${id}`
-}
-
-function safeThumb(m: MateriRow) {
-  const yt = m.link_konten ? getYouTubeID(m.link_konten) : null
-  if (yt) return `https://img.youtube.com/vi/${yt}/mqdefault.jpg`
-  return m.thumbnail_url || "https://placehold.co/200x112"
-}
-
-export default function MateriPage({
-  params,
-}: {
-  params: Promise<{ idFakultas: string; idKelas: string; idMateri: string }>
-}) {
-  const p = use(params)
-  const idFakultas = p.idFakultas
-  const idKelas = p.idKelas
-  const idMateri = p.idMateri
-
-  const kelasIdNum = useMemo(() => Number(idKelas), [idKelas])
-  const materiIdNum = useMemo(() => Number(idMateri), [idMateri])
-
-  const [kelas, setKelas] = useState<KelasRow | null>(null)
-  const [materi, setMateri] = useState<MateriRow | null>(null)
-  const [materiKelas, setMateriKelas] = useState<MateriRow[]>([])
-  const [loading, setLoading] = useState(true)
-  const [fatal, setFatal] = useState<string | null>(null)
+  // Helper untuk mendapatkan ID YouTube dari URL
+  const getYouTubeID = (url: string) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
 
   useEffect(() => {
-    const controller = new AbortController()
-
-    const load = async () => {
+    const fetchData = async () => {
       try {
-        setLoading(true)
-        setFatal(null)
+        setLoading(true);
+        // 1. Ambil Detail Materi
+        const { data: currentMateri } = await supabaseClient
+          .from('Materi')
+          .select('*')
+          .eq('id_Materi', idMateri)
+          .single();
+        
+        if (currentMateri) setMateri(currentMateri);
 
-        if (!Number.isFinite(kelasIdNum) || !Number.isFinite(materiIdNum)) {
-          setFatal("Param tidak valid")
-          return
-        }
+        // 2. Ambil Semua Materi dalam Kelas yang sama
+        const { data: listMateri } = await supabaseClient
+          .from('Materi')
+          .select('*')
+          .eq('id_Kelas', idKelas);
 
-        const base = backendUrl()
+        if (listMateri) setAllMateri(listMateri);
 
-        const [kelasMaybe, listRes, detailRes] = await Promise.all([
-          fetchKelasSmart(kelasIdNum, controller.signal),
-          fetchJson(`${base}/api/materi?id_Kelas=${kelasIdNum}`, controller.signal),
-          fetchJson(`${base}/api/materi?id_Materi=${materiIdNum}`, controller.signal),
-        ])
+        // 3. Cek apakah materi ini sudah pernah diselesaikan
+        const { data: logProgress } = await supabaseClient
+          .from('Progress_Materi')
+          .select('*')
+          .eq('id_User', userId)
+          .eq('id_Materi', idMateri)
+          .maybeSingle();
+        
+        if (logProgress) setIsCompleted(true);
 
-        if (!listRes.ok) {
-          const msg = listRes.json?.error || `Gagal ambil list materi (${listRes.status})`
-          setFatal(String(msg))
-          return
-        }
-
-        if (!detailRes.ok) {
-          const msg = detailRes.json?.error || `Gagal ambil detail materi (${detailRes.status})`
-          setFatal(String(msg))
-          return
-        }
-
-        const listData = pickData(listRes.json)
-        const detailData = pickData(detailRes.json)
-
-        const listRows = Array.isArray(listData) ? (listData as MateriRow[]) : []
-        const detailRow = detailData && !Array.isArray(detailData) ? (detailData as MateriRow) : null
-
-        setMateriKelas(listRows)
-        setMateri(detailRow)
-
-        if (kelasMaybe) {
-          setKelas(kelasMaybe)
-        } else {
-          setKelas({ id_Kelas: kelasIdNum, nama_kelas: "" })
-        }
+      } catch (err) {
+        console.error("Gagal memuat data:", err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
+    };
+    fetchData();
+  }, [idMateri, idKelas, userId]);
+
+  // FUNGSI UTAMA: Update Progress & Munculkan Pop-up
+  const handleProgress = async () => {
+    if (!userId || isCompleted) return;
+
+    try {
+      console.log("Menyimpan progres...");
+
+      // A. Simpan ke Progress_Materi
+      const { error: logError } = await supabaseClient
+        .from('Progress_Materi')
+        .upsert({ 
+          id_User: userId, 
+          id_Materi: idMateri, 
+          sudah_tonton: true 
+        }, { onConflict: 'id_User, id_Materi' });
+
+      if (logError) throw logError;
+
+      // B. Hitung jumlah materi selesai di kelas ini
+      const { data: listSelesai, error: countError } = await supabaseClient
+        .from('Progress_Materi')
+        .select('id_Materi, Materi!inner(id_Kelas)')
+        .eq('id_User', userId)
+        .eq('Materi.id_Kelas', idKelas);
+
+      if (countError) throw countError;
+      const jumlahSelesai = listSelesai?.length || 0;
+
+      // C. Update tabel rekap Progress
+      const { data: progRow, error: fetchError } = await supabaseClient
+        .from('Progress')
+        .select('Total_tugas')
+        .eq('id_User', userId)
+        .eq('id_Kelas', idKelas)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (progRow) {
+        const total = progRow.Total_tugas || 1;
+        const persen = (jumlahSelesai / total) * 100;
+
+        await supabaseClient
+          .from('Progress')
+          .update({
+            "Tugas_Selesai": jumlahSelesai,
+            "Prsentase_Progress": Math.min(Math.round(persen), 100),
+            "Last_update": new Date().toISOString()
+          })
+          .eq('id_User', userId)
+          .eq('id_Kelas', idKelas);
+      }
+
+      setIsCompleted(true);
+      setShowSuccessPopup(true); // Munculkan pop-up sukses
+      
+      // Sembunyikan otomatis setelah 4 detik
+      setTimeout(() => setShowSuccessPopup(false), 4000);
+
+    } catch (err: any) {
+      console.error("Gagal update progres:", err.message);
     }
+  };
 
-    load()
-    return () => controller.abort()
-  }, [kelasIdNum, materiIdNum])
+  if (loading) return <div className="p-10 text-center italic text-gray-500">Memuat materi...</div>;
+  if (!materi) return notFound();
 
-  const nextItems = useMemo(() => {
-    if (!materiKelas.length || !materi) return []
-    const sorted = [...materiKelas].sort((a, b) => {
-      const au = a.urutan ?? 0
-      const bu = b.urutan ?? 0
-      if (au !== bu) return au - bu
-      return a.id_Materi - b.id_Materi
-    })
-    const idx = sorted.findIndex((x) => x.id_Materi === materi.id_Materi)
-    const after = idx >= 0 ? sorted.slice(idx + 1) : sorted
-    return after.slice(0, 2)
-  }, [materiKelas, materi])
-
-  if (loading) return <div className="p-10 text-center italic text-gray-500">Memuat materi...</div>
-
-  if (fatal) {
-    return (
-      <div className="p-10 text-center text-sm text-gray-600">
-        <div className="font-semibold text-gray-900">Gagal memuat</div>
-        <div className="mt-2">{fatal}</div>
-        <div className="mt-4">
-          <Link className="text-blue-700 font-semibold hover:underline" href={`/Kelas/${idFakultas}/${idKelas}`}>
-            Kembali ke daftar materi
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
-  if (!materi) return notFound()
-
-  const embedSrc = materi.link_konten ? toYouTubeEmbed(materi.link_konten) : ""
-  const labelTipe = (materi.tipe_konten || "MATERI").toUpperCase()
-  const kelasNama = kelas?.nama_kelas ? kelas.nama_kelas : ""
+  const tipe = (materi.tipe_konten || '').toUpperCase();
+  const isVideo = tipe === 'VIDEO';
+  const ytID = getYouTubeID(materi.link_konten);
 
   return (
-    <div className="flex bg-[#F8F9FA] min-h-screen text-gray-900">
+    <div className="flex bg-[#F8F9FA] min-h-screen text-gray-900 font-sans relative">
       <Sidebar />
-      <div className="flex-1 ml-64 flex flex-col">
-        <Topbar />
-
-        <main className="p-8 pt-24">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Kelas <span className="font-normal text-gray-500">{kelasNama}</span>
+      <div className="flex-1 ml-64">
+        
+        {/* HEADER */}
+        <header className="flex justify-between items-center p-6 bg-white border-b border-gray-100 sticky top-0 z-20">
+          <div className="flex items-center gap-4">
+            <Link href={`/Kelas/${idFakultas}/${idKelas}`} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <ArrowLeft size={20} />
+            </Link>
+            <h1 className="text-xl font-bold tracking-tight">
+              Materi: <span className="font-normal text-gray-500">{materi.judul_materi}</span>
             </h1>
           </div>
+          <div className="flex items-center gap-4">
+            {isCompleted && (
+              <div className="flex items-center gap-2 bg-green-50 text-green-600 px-4 py-1.5 rounded-full text-[10px] font-bold border border-green-100 uppercase tracking-wider">
+                <CheckCircle size={14} /> Selesai Dipelajari
+              </div>
+            )}
+            <Bell size={22} className="text-gray-400 cursor-pointer" />
+          </div>
+        </header>
 
+        <main className="p-8">
           <div className="grid grid-cols-12 gap-8 items-start">
-            <section className="col-span-8">
-              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="w-full aspect-video bg-black">
-                  {embedSrc ? (
-                    <iframe
-                      className="w-full h-full"
-                      src={embedSrc}
-                      title={materi.judul_materi}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white text-sm">
-                      Konten belum tersedia
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-6">
-                  <h2 className="text-3xl font-bold text-gray-900">{materi.judul_materi}</h2>
-
-                  <div className="mt-3 inline-flex items-center rounded-md bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">
-                    {labelTipe}
+            
+            <section className="col-span-8 space-y-6">
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                
+                {isVideo ? (
+                  <div className="aspect-video bg-black">
+                    {ytID ? (
+                      <YouTube
+                        videoId={ytID}
+                        onEnd={handleProgress}
+                        opts={{ width: '100%', height: '100%', playerVars: { autoplay: 0, rel: 0 } }}
+                        className="w-full h-full"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-white italic">Video tidak ditemukan</div>
+                    )}
                   </div>
-
-                  {materi.deskripsi ? (
-                    <p className="mt-4 text-gray-600 leading-relaxed">{materi.deskripsi}</p>
-                  ) : null}
-
-                  <div className="mt-6">
-                    <Link
-                      href={`/Kelas/${idFakultas}/${idKelas}`}
-                      className="text-sm font-semibold text-blue-700 hover:underline"
-                    >
-                      Kembali ke daftar materi
-                    </Link>
+                ) : (
+                  <div className="h-64 bg-gradient-to-br from-[#064479] to-[#0a66b5] flex flex-col items-center justify-center p-8 text-white">
+                     {tipe === 'TEKS CATATAN' ? <BookOpen size={48} className="mb-4 opacity-80" /> : <FileText size={48} className="mb-4 opacity-80" />}
+                     <h2 className="text-2xl font-bold uppercase tracking-wider">
+                        {tipe === 'TEKS CATATAN' ? 'Catatan Belajar' : 'Rangkuman Materi'}
+                     </h2>
+                     {!isCompleted && (
+                        <button 
+                          onClick={handleProgress}
+                          className="mt-6 bg-white text-[#064479] hover:bg-gray-100 px-6 py-2 rounded-xl text-sm font-bold shadow-lg transition-all"
+                        >
+                          Selesai Membaca
+                        </button>
+                     )}
+                  </div>
+                )}
+                
+                <div className="p-8">
+                  <span className={`text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest mb-4 inline-block ${isVideo ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                    {tipe || "UMUM"}
+                  </span>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-4">{materi.judul_materi}</h2>
+                  <hr className="mb-6 border-gray-100" />
+                  <div className="prose prose-blue max-w-none">
+                    <p className="text-gray-600 leading-relaxed whitespace-pre-line text-base">
+                      {materi.deskripsi || "Isi materi belum tersedia."}
+                    </p>
                   </div>
                 </div>
               </div>
             </section>
 
-            <aside className="col-span-4">
-              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">Selanjutnya</h3>
-
-                <div className="flex flex-col gap-4">
-                  {nextItems.length === 0 ? (
-                    <div className="text-sm text-gray-500">Belum ada materi berikutnya</div>
-                  ) : (
-                    nextItems.map((m) => (
-                      <Link
-                        key={m.id_Materi}
-                        href={`/Kelas/${idFakultas}/${idKelas}/${m.id_Materi}`}
-                        className="block transition-transform hover:scale-[1.01]"
-                      >
-                        <MateriCard
-                          id={String(m.id_Materi)}
-                          title={m.judul_materi}
-                          date={m.Tanggal_tayang as any}
-                          thumbnailUrl={safeThumb(m)}
-                          tags={[(m.tipe_konten || "MATERI").toUpperCase()]}
-                        />
-                      </Link>
-                    ))
-                  )}
-                </div>
+            <aside className="col-span-4 space-y-4 sticky top-28">
+              <h3 className="text-lg font-bold text-gray-800">Daftar Materi</h3>
+              <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-2">
+                {allMateri.map((item) => {
+                  const ytId = getYouTubeID(item.link_konten);
+                  const itemTipe = (item.tipe_konten || '').toUpperCase();
+                  const isItemVideo = itemTipe === 'VIDEO';
+                  
+                  const thumb = (isItemVideo && ytId)
+                      ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` 
+                      : `https://placehold.co/300x168/064479/white?text=${itemTipe}`;
+                  
+                  return (
+                    <Link 
+                      key={item.id_Materi} 
+                      href={`/Kelas/${idFakultas}/${idKelas}/${item.id_Materi}`}
+                      className={`group bg-white rounded-xl border p-3 shadow-sm hover:border-blue-300 transition-all ${item.id_Materi.toString() === idMateri ? 'ring-2 ring-blue-500 border-transparent bg-blue-50/30' : 'border-gray-100'}`}
+                    >
+                      <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden mb-3">
+                        <Image src={thumb} alt="thumb" fill unoptimized className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                        {isItemVideo && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                            <PlayCircle className="text-white opacity-80" size={30} />
+                          </div>
+                        )}
+                      </div>
+                      <h4 className="text-xs font-bold text-gray-800 line-clamp-2 leading-snug">{item.judul_materi}</h4>
+                    </Link>
+                  );
+                })}
               </div>
             </aside>
           </div>
         </main>
 
-        <footer className="p-8 text-center text-gray-500 text-sm border-t border-gray-100 mt-12 bg-white">
-          © Copyright 2025, Geniuz. All Rights Reserved
-        </footer>
+        {/* POP-UP NOTIFIKASI SUKSES */}
+        {showSuccessPopup && (
+          <div className="fixed bottom-10 right-10 z-[100] animate-in fade-in slide-in-from-right-10 duration-500">
+            <div className="bg-[#064479] text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-blue-400/30 min-w-[300px]">
+              <div className="bg-green-400 p-2 rounded-full shadow-inner">
+                <CheckCircle size={24} className="text-[#064479]" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-sm">Wah, keren banget!</p>
+                <p className="text-[11px] opacity-80">Materi ini sudah selesai kamu pelajari. +1 Progres!</p>
+              </div>
+              <button 
+                onClick={() => setShowSuccessPopup(false)}
+                className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X size={18} className="opacity-50 hover:opacity-100" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
-  )
+  );
 }

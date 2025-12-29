@@ -11,7 +11,7 @@ export default function ModuleForm({
   onCreate: (m: any) => void;
   onCancel: () => void;
 }) {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [urutan, setUrutan] = useState<string | number>("");
@@ -29,7 +29,7 @@ export default function ModuleForm({
 
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
-    const res = await fetch(`${backendUrl}/api/admin/materi`, {
+    const res = await fetch(`${API}/api/admin/materi`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

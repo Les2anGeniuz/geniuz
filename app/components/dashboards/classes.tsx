@@ -15,7 +15,7 @@ interface Kelas {
 }
 
 const ClassesDashboard = () => {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
   const [data, setData] = useState<Kelas[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -30,7 +30,7 @@ const ClassesDashboard = () => {
         setLoading(false);
         return;
       }
-      const res = await fetch(`${backendUrl}/api/admin/kelas?page=1&limit=5`, {
+      const res = await fetch(`${API}/api/admin/kelas?page=1&limit=5`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();

@@ -14,11 +14,11 @@ export default function LoginAdminPage() {
       const fallbackUrl =
         typeof window !== "undefined"
           ? `${window.location.protocol}//${window.location.hostname}:5000`
-          : "http://localhost:5000";
+          : process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || fallbackUrl;
+      const API = process.env.NEXT_PUBLIC_API_BASE || fallbackUrl;
 
-      const res = await fetch(`${backendUrl}/api/admin/login`, {
+      const res = await fetch(`${API}/api/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

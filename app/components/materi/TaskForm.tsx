@@ -11,7 +11,7 @@ export default function TaskForm({
   kelasId?: string | null;
   modules: { id: string; title: string }[];
 }) {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
   const [title, setTitle] = useState("");
   const [moduleId, setModuleId] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -32,7 +32,7 @@ export default function TaskForm({
 
       const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
-      const res = await fetch(`${backendUrl}/api/admin/tugas`, {
+      const res = await fetch(`${API}/api/admin/tugas`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

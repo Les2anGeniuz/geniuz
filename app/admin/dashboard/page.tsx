@@ -19,12 +19,12 @@ const SiswaPerFakultasPieChart = () => {
       try {
         const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
         if (!token) return setLoading(false);
-        const fakultasRes = await fetch(`${backendUrl}/api/admin/fakultas`, {
+        const fakultasRes = await fetch(`${API}/api/admin/fakultas`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const fakultasJson = await fakultasRes.json();
         const fakultasList: any[] = Array.isArray(fakultasJson.fakultas) ? fakultasJson.fakultas : (fakultasJson.data || []);
-        const siswaRes = await fetch(`${backendUrl}/api/admin/siswa`, {
+        const siswaRes = await fetch(`${API}/api/admin/siswa`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const siswaJson = await siswaRes.json();
@@ -87,7 +87,7 @@ const NewStudentsBarChart = ({ horizontal = false }: { horizontal?: boolean }) =
       try {
         const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
         if (!token) return setLoading(false);
-        const res = await fetch(`${backendUrl}/api/admin/new-students-monthly`, {
+        const res = await fetch(`${API}/api/admin/new-students-monthly`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();
@@ -159,7 +159,7 @@ const RevenueLineChart = () => {
       try {
         const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
         if (!token) return setLoading(false);
-        const res = await fetch(`${backendUrl}/api/admin/revenue-monthly`, {
+        const res = await fetch(`${API}/api/admin/revenue-monthly`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();
@@ -302,7 +302,7 @@ const RevenueFinance: React.FC = () => {
       try {
         const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
         if (!token) return setData((d) => ({ ...d, loading: false }));
-        const res = await fetch(`${backendUrl}/api/admin/analytics`, {
+        const res = await fetch(`${API}/api/admin/analytics`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();
@@ -360,7 +360,7 @@ const RevenueFinance: React.FC = () => {
   );
 };
 
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 const KPICards: React.FC = () => {
   const [kpi, setKpi] = useState({
     totalKelas: 0,
@@ -390,16 +390,16 @@ const KPICards: React.FC = () => {
           return;
         }
         const [siswaRes, mentorRes, fakultasRes] = await Promise.all([
-          fetch(`${backendUrl}/api/admin/siswa`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${backendUrl}/api/admin/mentor`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${backendUrl}/api/admin/fakultas`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/api/admin/siswa`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/api/admin/mentor`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/api/admin/fakultas`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
         const [siswa, mentor, fakultas] = await Promise.all([
           siswaRes.json(),
           mentorRes.json(),
           fakultasRes.json(),
         ]);
-        const res = await fetch(`${backendUrl}/api/admin/analytics`, {
+        const res = await fetch(`${API}/api/admin/analytics`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -473,7 +473,7 @@ export default function AdminDashboard() {
     const fetchStatus = async () => {
       const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
       if (!token) return;
-      const res = await fetch(`${backendUrl}/api/admin/analytics`, {
+      const res = await fetch(`${API}/api/admin/analytics`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();

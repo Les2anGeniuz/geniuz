@@ -1,6 +1,5 @@
 import { supabaseAdmin } from '../services/supabase.js'
 
-// Fungsi untuk mengambil daftar kelas (sudah ada sebelumnya)
 export const getMyKelas = async (req, res) => {
   try {
     const userId = req.user?.id_User
@@ -65,13 +64,12 @@ export const getMyKelas = async (req, res) => {
   }
 }
 
-// ✅ Fungsi Baru: Mengambil Data Profil + Instansi & Jurusan
 export const getMyProfile = async (req, res) => {
   try {
     const userId = req.user?.id_User
     if (!userId) return res.status(401).json({ error: 'Unauthorized' })
 
-    // 1. Ambil data dasar dari tabel User
+ 
     const { data: user, error: userError } = await supabaseAdmin
       .from('User')
       .select('id_User, nama_lengkap, email, foto_profil')
@@ -80,7 +78,6 @@ export const getMyProfile = async (req, res) => {
 
     if (userError) return res.status(500).json({ error: userError.message })
 
-    // 2. Ambil data Instansi & Jurusan dari pendaftaran terbaru
     const { data: pendaftaran } = await supabaseAdmin
       .from('Pendaftaran')
       .select('Instansi, Jurusan')
@@ -89,7 +86,6 @@ export const getMyProfile = async (req, res) => {
       .limit(1)
       .single()
 
-    // Gabungkan data untuk dikirim ke frontend
     return res.status(200).json({
       ...user,
       nama_universitas: pendaftaran?.Instansi || 'Belum Diatur',
@@ -100,13 +96,12 @@ export const getMyProfile = async (req, res) => {
   }
 }
 
-// ✅ Fungsi Baru: Update Profil (Hanya Email & Foto)
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user?.id_User
     if (!userId) return res.status(401).json({ error: 'Unauthorized' })
 
-    // AMBIL nama_lengkap JUGA DARI BODY
+ 
     const { email, foto_profil, nama_lengkap } = req.body 
 
     const { data, error } = await supabaseAdmin
@@ -114,7 +109,7 @@ export const updateProfile = async (req, res) => {
       .update({ 
         email, 
         foto_profil, 
-        nama_lengkap // SIMPAN KE DATABASE
+        nama_lengkap 
       })
       .eq('id_User', userId)
 

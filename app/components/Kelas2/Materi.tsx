@@ -1,7 +1,6 @@
 import Image from 'next/image';
-import { MoreVertical, Calendar } from 'lucide-react'; // Tambah icon Calendar agar lebih mirip desain
+import { MoreVertical, Calendar } from 'lucide-react'; 
 
-// Helper untuk warna tag sesuai desain referensi
 const getTagColor = (tag: string) => {
   const upperTag = tag.toUpperCase();
   if (upperTag.includes('PERTEMUAN')) return 'bg-blue-50 text-blue-500 border border-blue-100';
@@ -19,7 +18,7 @@ export interface MateriCardProps {
 }
 
 export default function MateriCard({ title, date, thumbnailUrl, tags }: MateriCardProps) {
-  // Format tanggal agar lebih cantik (opsional, sesuaikan dengan database)
+  
   const formattedDate = date ? new Date(date).toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'long',
@@ -28,7 +27,7 @@ export default function MateriCard({ title, date, thumbnailUrl, tags }: MateriCa
 
   return (
     <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4 flex gap-6 items-center transition-all hover:shadow-md hover:border-blue-100 group">
-      {/* Thumbnail dengan aspek rasio yang pas */}
+      {/* Thumbnail */}
       <div className="relative w-[200px] h-[112px] flex-shrink-0 overflow-hidden rounded-lg shadow-inner bg-gray-100">
         <Image 
           src={thumbnailUrl} 

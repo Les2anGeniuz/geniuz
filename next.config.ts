@@ -1,16 +1,48 @@
 import type { NextConfig } from "next";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
-
 const nextConfig: NextConfig = {
   async rewrites() {
-    if (!API_BASE) return [];
     return [
       {
         source: "/api/:path*",
-        destination: `${API_BASE}/api/:path*`,
+        // ✅ backend VPS kamu
+        destination: "http://157.230.251.113/api/:path*",
       },
     ];
+  },
+
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "sesvblqrcbdmnkfvugtk.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
+        protocol: "https",
+        hostname: "img.youtube.com",
+        port: "",
+        pathname: "/vi/**",
+      },
+      {
+        protocol: "https",
+        hostname: "placehold.co",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
+
+      // ✅ (OPSIONAL) kalau image kamu ada yang dari backend VPS (misal /uploads/...)
+      {
+        protocol: "http",
+        hostname: "157.230.251.113",
+        pathname: "/**",
+      },
+    ],
   },
 };
 

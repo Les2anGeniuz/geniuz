@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 
 export default function DashboardStats() {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
   const [stats, setStats] = useState({
     totalKelas: 0,
     siswaAktif: 0,
@@ -27,7 +27,7 @@ export default function DashboardStats() {
           setLoading(false);
           return;
         }
-        const res = await fetch(`${backendUrl}/api/admin/analytics`, {
+        const res = await fetch(`${API}/api/admin/analytics`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

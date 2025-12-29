@@ -31,7 +31,7 @@ interface Mentor {
 }
 
 export default function KelasPage() {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
   const authHeaders = (): HeadersInit => {
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
     return token ? { Authorization: `Bearer ${token}` } : {} as HeadersInit;
@@ -71,7 +71,7 @@ export default function KelasPage() {
     if (search) params.set("search", search);
 
     try {
-      const url = `${backendUrl}/api/admin/kelas?${params.toString()}`;
+      const url = `${API}/api/admin/kelas?${params.toString()}`;
       const res = await fetch(url, {
         headers: { ...authHeaders() },
       });
@@ -106,12 +106,12 @@ export default function KelasPage() {
     } catch (err) {
       console.error("Fetch kelas exception", err);
     }
-  }, [backendUrl, page, search]);
+  }, [API, page, search]);
 
   const loadFakultas = async () => {
     const token = ensureToken();
     if (!token) return;
-    const url = `${backendUrl}/api/admin/fakultas`;
+    const url = `${API}/api/admin/fakultas`;
     const res = await fetch(url, {
       headers: { ...authHeaders() },
     });
@@ -136,7 +136,7 @@ export default function KelasPage() {
   const loadMentor = async () => {
     const token = ensureToken();
     if (!token) return;
-    const url = `${backendUrl}/api/admin/mentor`;
+    const url = `${API}/api/admin/mentor`;
     const res = await fetch(url, {
       headers: { ...authHeaders() },
     });
@@ -212,13 +212,13 @@ export default function KelasPage() {
     let res;
 
     if (editing) {
-      res = await fetch(`${backendUrl}/api/admin/kelas/${editing.id_Kelas}`, {
+      res = await fetch(`${API}/api/admin/kelas/${editing.id_Kelas}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(body),
       });
     } else {
-      res = await fetch(`${backendUrl}/api/admin/kelas`, {
+      res = await fetch(`${API}/api/admin/kelas`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(body),
@@ -242,7 +242,7 @@ export default function KelasPage() {
     try {
         const token = ensureToken();
         if (!token) return;
-      const res = await fetch(`${backendUrl}/api/admin/kelas/${item.id_Kelas}`, {
+      const res = await fetch(`${API}/api/admin/kelas/${item.id_Kelas}`, {
         method: "DELETE",
         headers: { ...authHeaders() },
       });

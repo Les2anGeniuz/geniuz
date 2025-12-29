@@ -1,9 +1,97 @@
+// Siswa baru per bulan untuk bar chart
+export const newStudentsMonthly = async (req, res) => {
+  try {
+    const now = new Date();
+    const year = now.getFullYear();
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    const months = monthNames.map(m => `${m} ${year}`);
+
+    // Ambil semua pendaftaran tahun ini
+    const start = new Date(year, 0, 1);
+    const end = new Date(year + 1, 0, 1);
+    const { data, error } = await supabaseAdmin
+      .from('Pendaftaran')
+      .select('id_Pendaftaran, tanggal_pendaftaran')
+      .gte('tanggal_pendaftaran', start.toISOString())
+      .lt('tanggal_pendaftaran', end.toISOString());
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Group by month index
+    const monthly = Array(12).fill(0);
+    data.forEach((row) => {
+      const date = new Date(row.tanggal_pendaftaran);
+      if (date.getFullYear() === year) {
+        const idx = date.getMonth();
+        monthly[idx] += 1;
+      }
+    });
+    res.json({
+      months,
+      counts: monthly
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+// Revenue bulanan untuk line chart
+export const revenueMonthly = async (req, res) => {
+  try {
+    const now = new Date();
+    const year = now.getFullYear();
+    // Buat array label bulan Jan–Des sesuai frontend
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    const months = monthNames.map(m => `${m} ${year}`);
+
+    // Ambil semua pembayaran tahun ini
+    const start = new Date(year, 0, 1);
+    const end = new Date(year + 1, 0, 1);
+    const { data, error } = await supabaseAdmin
+      .from('Pembayaran')
+      .select('jumlah_bayar, tanggal_bayar')
+      .gte('tanggal_bayar', start.toISOString())
+      .lt('tanggal_bayar', end.toISOString());
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Group by month index
+    const monthly = Array(12).fill(0);
+    data.forEach((row) => {
+      const date = new Date(row.tanggal_bayar);
+      if (date.getFullYear() === year) {
+        const idx = date.getMonth(); // 0-based
+        monthly[idx] += Number(row.jumlah_bayar || 0);
+      }
+    });
+    res.json({
+      months,
+      revenues: monthly
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
 import { createClient } from '@supabase/supabase-js'
+
+// Untuk validasi admin
+import dotenv from 'dotenv';
+dotenv.config();
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 )
+
+// Untuk akses service role (bisa query tabel Admin tanpa batasan RLS)
+const { createClient: createClientSR } = await import('@supabase/supabase-js');
+const supabaseAdmin = createClientSR(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE
+);
 
 function toISODate(d) {
   return new Date(d).toISOString()
@@ -55,6 +143,26 @@ function progressValuePct(p) {
 
 export async function getAdminAnalytics(req, res) {
   try {
+    // --- LOG: Masuk ke controller analytics ---
+    console.log('[getAdminAnalytics] called', { time: new Date().toISOString() });
+    // --- Ambil adminId dari JWT payload (diset di middleware requireAdmin) ---
+    const adminId = req.user?.adminId;
+    console.log('[getAdminAnalytics] adminId from JWT:', adminId);
+    if (!adminId) {
+      console.warn('[getAdminAnalytics] Tidak ada adminId di JWT!');
+      return res.status(401).json({ error: 'Unauthorized: adminId missing' });
+    }
+    // --- Validasi adminId di tabel Admin ---
+    const { data: admin, error: adminError } = await supabaseAdmin
+      .from('Admin')
+      .select('id, nama, email')
+      .eq('id', adminId)
+      .single();
+    if (adminError || !admin) {
+      console.warn('[getAdminAnalytics] Admin tidak ditemukan di DB:', adminId, adminError?.message);
+      return res.status(404).json({ error: 'Admin tidak ditemukan' });
+    }
+    console.log('[getAdminAnalytics] Admin ditemukan:', admin);
     const startDate = req.query.startDate ? new Date(String(req.query.startDate)) : addDays(new Date(), -30)
     const endDate = req.query.endDate ? new Date(String(req.query.endDate)) : new Date()
 
@@ -77,7 +185,12 @@ export async function getAdminAnalytics(req, res) {
       submissionsPrev,
       enrollNow,
       enrollPrev,
-      kelasRows
+      kelasRows,
+      mentorRows,
+      fakultasRows,
+      materiRows,
+      tugasRows,
+      siswaRows
     ] = await Promise.all([
       supabase
         .from('Pembayaran')
@@ -131,7 +244,27 @@ export async function getAdminAnalytics(req, res) {
 
       supabase
         .from('Kelas')
-        .select('id_Kelas,nama_kelas,id_Fakultas,id_Mentor')
+        .select('id_Kelas,nama_kelas,id_Fakultas,id_Mentor'),
+
+      supabase
+        .from('Mentor')
+        .select('id_Mentor'),
+
+      supabase
+        .from('Fakultas')
+        .select('id_Fakultas'),
+
+      supabase
+        .from('Materi')
+        .select('id_Materi'),
+
+      supabase
+        .from('Tugas')
+        .select('id_Tugas'),
+
+      supabase
+        .from('User')
+        .select('id_User')
     ])
 
     if (revenueNow.error) throw revenueNow.error
@@ -209,7 +342,14 @@ export async function getAdminAnalytics(req, res) {
         activeStudents,
         completedClasses,
         avgStudyHoursPerDay: avgProgressPct,
-        kpiDelta
+        kpiDelta,
+        // KPI for dashboard cards
+        totalKelas: Array.isArray(kelasRows.data) ? kelasRows.data.length : 0,
+        siswaAktif: Array.isArray(siswaRows.data) ? siswaRows.data.length : 0,
+        totalMentor: Array.isArray(mentorRows.data) ? mentorRows.data.length : 0,
+        totalFakultas: Array.isArray(fakultasRows.data) ? fakultasRows.data.length : 0,
+        totalMateri: Array.isArray(materiRows.data) ? materiRows.data.length : 0,
+        totalTugas: Array.isArray(tugasRows.data) ? tugasRows.data.length : 0,
       },
       enrollmentVsCompletion: [],
       classPopularity: [],
@@ -221,6 +361,7 @@ export async function getAdminAnalytics(req, res) {
 
     res.json(payload)
   } catch (e) {
+    console.error('[getAdminAnalytics] ERROR:', e);
     res.status(500).json({ error: String(e?.message || e) })
   }
 }

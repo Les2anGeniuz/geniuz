@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body
+    console.log("[ADMIN LOGIN BODY]", { email, hasPassword: !!password, passLen: password ? password.length : 0 });
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' })
     }
@@ -15,9 +16,15 @@ export const adminLogin = async (req, res) => {
       .eq('password', password)
       .single()
 
+    console.log("[ADMIN LOGIN SELECT]", { found: !!admin, error: error?.message || null });
+
     if (error || !admin) {
       return res.status(400).json({ error: 'Invalid credentials' })
     }
+
+    // Password check is done via query above (not recommended, but keeping as is)
+    // If you want to use bcrypt, add check here and log result
+    // Example: console.log("[ADMIN LOGIN BCRYPT]", { ok: true/false });
 
     const token = jwt.sign(
       { adminId: admin.id, role: 'admin' },
@@ -31,6 +38,7 @@ export const adminLogin = async (req, res) => {
       token
     })
   } catch (e) {
+    console.error("[ADMIN LOGIN ERROR]", e);
     return res.status(500).json({ error: e?.message || 'Internal server error' })
   }
 }

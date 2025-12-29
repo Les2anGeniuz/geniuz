@@ -33,7 +33,9 @@ export default function LoginAdminPage() {
       if (data?.token) {
         // Simpan token ke localStorage agar bisa digunakan untuk auth
         localStorage.setItem("admin_token", data.token);
-        // Set cookie (optional, for legacy)
+        // Set cookie admin_token agar bisa diakses server component
+        document.cookie = `admin_token=${data.token}; path=/; secure; samesite=strict`;
+        // (opsional: tetap set admin_id jika perlu)
         document.cookie = `admin_id=${data.token}; path=/; secure; samesite=strict`;
         router.push("/admin/dashboard");
       } else {

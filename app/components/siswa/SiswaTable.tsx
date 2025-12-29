@@ -1,4 +1,5 @@
 import React from "react";
+import { useRouter } from "next/navigation";
 
 interface StudentRow {
     id_user: string;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 const SiswaTable: React.FC<Props> = ({ data }) => {
+    const router = useRouter();
     return (
         <div className="w-full">
             <div className="overflow-x-auto">
@@ -43,7 +45,8 @@ const SiswaTable: React.FC<Props> = ({ data }) => {
                             {data.map((row) => (
                                 <tr
                                     key={row.id_user}
-                                    className="hover:bg-gray-50 transition"
+                                    className="hover:bg-blue-50 cursor-pointer transition"
+                                    onClick={() => router.push(`/admin/siswa/${row.id_user}`)}
                                 >
                                     <td className="py-4 px-4">
                                         <div className="flex items-center gap-3">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   PieChart,
   Pie,
@@ -9,7 +9,7 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
-import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 
 type ChartItem = {
   name: string;
@@ -17,124 +17,104 @@ type ChartItem = {
   color: string;
 };
 
-const StatisticsChart: React.FC = () => {
-  const [chartData, setChartData] = useState<ChartItem[]>([
-    { name: "Tugas", value: 0, color: "#0f172a" },
-    { name: "Materi", value: 0, color: "#3b82f6" },
-    { name: "Kehadiran", value: 0, color: "#93c5fd" },
-  ]);
+const TOKEN_KEY = "access_token";
+const getToken = () =>
+  typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY);
 
+const StatisticsChart: React.FC = () => {
+  const [chartData, setChartData] = useState<ChartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const API_BASE = useMemo(
+    () => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api",
+    []
+  );
 
   useEffect(() => {
     const fetchStats = async () => {
+      const token = getToken();
+      if (!token) {
+        router.replace("/login");
+        return;
+      }
+
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const response = await fetch(`${API_BASE}/dashboard/statistik`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
 
-        if (!user) return;
-
-        const { data, error } = await supabase
-          .from("statistics")
-          .select("tugas, materi, absen")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error fetching chart stats:", error);
-          return;
-        }
-
-        if (data) {
+        if (response.ok) {
+          // Menggunakan palet warna dari image_15.png
           setChartData([
-            { name: "Tugas", value: data.tugas ?? 0, color: "#0f172a" },
-            { name: "Materi", value: data.materi ?? 0, color: "#3b82f6" },
-            { name: "Kehadiran", value: data.absen ?? 0, color: "#93c5fd" },
+            // Pengerjaan Tugas -> Main Color (#064479)
+            { name: "Pengerjaan Tugas", value: data.tugas ?? 0, color: "#064479" },
+            // Materi Ditonton -> Biru Sedang (sebagai transisi)
+            { name: "Materi Ditonton", value: data.materi ?? 0, color: "#3b82f6" },
+            // Kehadiran -> Accent Cyan (#00D9FF)
+            { name: "Kehadiran", value: data.absen ?? 0, color: "#00D9FF" },
           ]);
         }
       } catch (err) {
-        console.error("Unexpected error:", err);
+        console.error("Error fetching chart stats:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchStats();
-  }, []);
+  }, [API_BASE, router]);
 
   const totalValue = chartData.reduce((acc, curr) => acc + curr.value, 0);
 
-  const emptyData: ChartItem[] = [
-    { name: "Belum ada data", value: 100, color: "#e5e7eb" },
-  ];
-
   if (loading) {
     return (
-      <div className="w-full bg-white border border-gray-200 rounded-xl p-6 shadow-sm h-[390px] flex items-center justify-center">
-        <div className="text-gray-400 animate-pulse">Memuat data...</div>
+      <div className="w-full bg-white border border-gray-200 rounded-2xl p-6 shadow-sm h-[390px] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-white border border-gray-200 rounded-xl p-6 shadow-sm h-[390px]">
-      <h2 className="text-xl font-bold text-black mb-4">Statistik</h2>
+    <div className="w-full bg-white border border-gray-200 rounded-2xl p-6 shadow-sm h-[390px] flex flex-col">
+      <h2 className="text-[28px] font-extrabold text-[#0f172a] mb-4">Statistik</h2>
 
-      <div className="h-[300px] w-full flex justify-center items-center relative">
+      <div className="flex-1 w-full flex justify-center items-center relative">
         {totalValue > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={chartData}
                 cx="50%"
-                cy="50%"
-                innerRadius={60}
+                cy="45%"
+                innerRadius={70}
                 outerRadius={100}
-                paddingAngle={5}
+                paddingAngle={8}
                 dataKey="value"
               >
                 {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={entry.color}
-                    stroke="none"
-                  />
+                  <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                 ))}
               </Pie>
-
-              {/* 🔧 FIX UTAMA ADA DI SINI */}
-              <Tooltip formatter={(value, name) => [Number(value ?? 0), name]} />
-
-              <Legend verticalAlign="bottom" height={36} iconType="circle" />
+              <Tooltip 
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                formatter={(value) => [value, "Jumlah"]} 
+              />
+              {/* Legend dengan font lebih kecil (text-xs) */}
+              <Legend 
+                verticalAlign="bottom" 
+                align="center" 
+                iconType="circle" 
+                wrapperStyle={{ paddingTop: '20px' }}
+                formatter={(value) => <span className="text-xs font-medium text-gray-600">{value}</span>}
+              />
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <div className="w-full h-full flex flex-col justify-center items-center relative">
-            <div className="absolute inset-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={emptyData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    dataKey="value"
-                    stroke="none"
-                    isAnimationActive={false}
-                  >
-                    <Cell fill={emptyData[0].color} />
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="z-10 text-center">
-              <span className="text-gray-400 font-semibold text-sm">
-                Belum ada data
-              </span>
-            </div>
+          <div className="text-center">
+            <div className="w-32 h-32 rounded-full border-[12px] border-gray-100 mx-auto mb-4" />
+            <span className="text-gray-400 font-medium">Belum ada data aktivitas</span>
           </div>
         )}
       </div>

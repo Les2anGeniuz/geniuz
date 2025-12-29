@@ -13,7 +13,9 @@ const SELECT_KELAS = `
   Mentor (
     id_Mentor,
     nama_mentor
-  )
+  ),
+  Materi (*),
+  Tugas (*)
 `
 
 export const listAdminKelas = async (req, res) => {

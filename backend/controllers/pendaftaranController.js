@@ -1,3 +1,30 @@
+// Update pendaftaran by id
+export const updatePendaftaran = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Hanya field yang diizinkan
+    const allowed = [
+      'Domisili', 'Jurusan', 'Semester', 'Instansi', 'Tanggal_Lahir', 'status_pendaftaran', 'id_Fakultas'
+    ];
+    const patch = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) patch[key] = req.body[key];
+    }
+    if (!Object.keys(patch).length) {
+      return res.status(400).json({ error: 'Tidak ada field untuk diupdate' });
+    }
+    const { data, error } = await supabaseAdmin
+      .from('Pendaftaran')
+      .update(patch)
+      .eq('id_Pendaftaran', id)
+      .select('*')
+      .single();
+    if (error) return res.status(400).json({ error: error.message });
+    return res.json({ data });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || 'Internal server error' });
+  }
+};
 import { supabaseAdmin } from '../services/supabase.js'
 
 export const createPendaftaran = async (req, res) => {

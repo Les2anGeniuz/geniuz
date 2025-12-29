@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
+
 interface Kelas {
-  id_Kelas: number;
+  id_Kelas: number | string;
+  id_Fakultas: number | string;
   nama_kelas: string;
   deskripsi: string | null;
   nama_fakultas: string | null;
@@ -47,84 +50,82 @@ export default function KelasTable({ data, onEdit, onDelete }: Props) {
         ) : (
           data.map((item) => (
             <div key={item.id_Kelas}>
-              {/* Desktop row (md+) - use existing grid */}
-              <div
-                className="hidden md:grid
-                  grid-cols-[1.5fr_1fr_1.3fr_0.3fr]
-                  px-5 py-5 rounded-2xl
-                  bg-white shadow-sm border border-gray-200
-                  hover:shadow-md hover:bg-gray-50
-                  transition-all duration-150
-                "
-              >
-                {/* NAMA KELAS */}
-                <div className="pr-6">
-                  <p className="text-[15px] font-bold text-[#002D5B] leading-snug">
-                    {item.nama_kelas}
-                  </p>
-                  <p className="text-[10px] text-gray-500 mt-1 leading-snug">
-                    {item.deskripsi || "Tidak ada deskripsi"}
-                  </p>
+              {/* Desktop Row */}
+              <Link href={`/admin/kelas/${item.id_Fakultas}/${item.id_Kelas}`} className="contents">
+                <div
+                  className="hidden md:grid
+                    grid-cols-[1.5fr_1fr_1.3fr_0.3fr]
+                    px-5 py-5 rounded-2xl
+                    bg-white shadow-sm border border-gray-200
+                    hover:shadow-md hover:bg-gray-50
+                    transition-all duration-150
+                    cursor-pointer
+                  "
+                >
+                  {/* NAMA KELAS */}
+                  <div className="pr-6">
+                    <p className="text-[15px] font-bold text-[#002D5B] leading-snug">
+                      {item.nama_kelas}
+                    </p>
+                    <p className="text-[10px] text-gray-500 mt-1 leading-snug">
+                      {item.deskripsi || "Tidak ada deskripsi"}
+                    </p>
+                  </div>
+
+                  {/* FAKULTAS */}
+                  <div className="flex items-center text-[12px] font-semibold text-[#002D5B]">
+                    {item.nama_fakultas || "-"}
+                  </div>
+
+                  {/* MENTOR */}
+                  <div className="flex items-center text-[12px] text-gray-700">
+                    {item.nama_mentor || "-"}
+                  </div>
+
+                  {/* ACTION BUTTONS */}
+                  <div className="flex justify-end items-center gap-2" onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => onEdit(item)}
+                      className="
+                        px-4 py-1.5 rounded-full border
+                        text-[12px] font-medium text-gray-600
+                        hover:bg-gray-100 transition
+                      "
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => onDelete(item)}
+                      className="
+                        px-4 py-1.5 rounded-full border border-red-300
+                        text-[12px] font-medium text-red-600
+                        hover:bg-red-50 transition
+                      "
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </div>
+              </Link>
 
-                {/* FAKULTAS */}
-                <div className="flex items-center text-[12px] font-semibold text-[#002D5B]">
-                  {item.nama_fakultas || "-"}
+              {/* Mobile Card */}
+              <div className="md:hidden bg-white rounded-2xl shadow-sm border border-gray-200 px-5 py-4 mb-2">
+                <div className="text-[15px] font-bold text-[#002D5B] leading-snug mb-1">
+                  {item.nama_kelas}
                 </div>
-
-                {/* MENTOR */}
-                <div className="flex items-center text-[12px] text-gray-700">
-                  {item.nama_mentor || "-"}
+                <div className="text-[10px] text-gray-500 mb-2 leading-snug">
+                  {item.deskripsi || "Tidak ada deskripsi"}
                 </div>
-
-                {/* ACTION BUTTONS */}
-                <div className="flex justify-end items-center gap-2">
-                  <button
-                    onClick={() => onEdit(item)}
-                    className="
-                      px-4 py-1.5 rounded-full border
-                      text-[12px] font-medium text-gray-600
-                      hover:bg-gray-100 transition
-                    "
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    onClick={() => onDelete(item)}
-                    className="
-                      px-4 py-1.5 rounded-full border border-red-300
-                      text-[12px] font-medium text-red-600
-                      hover:bg-red-50 transition
-                    "
-                  >
-                    Hapus
-                  </button>
-                </div>
-              </div>
-
-              {/* Mobile card (sm) - stacked layout to avoid horizontal scroll */}
-              <div className="md:hidden px-4 py-4 rounded-2xl bg-white shadow-sm border border-gray-200">
-                <div className="mb-2">
-                  <p className="text-[15px] font-bold text-[#002D5B] leading-snug">
-                    {item.nama_kelas}
-                  </p>
-                  <p className="text-[10px] text-gray-500 mt-1 leading-snug">
-                    {item.deskripsi || "Tidak ada deskripsi"}
-                  </p>
-                </div>
-
                 <div className="flex flex-col gap-2">
                   <div className="text-[12px]">
                     <span className="font-semibold text-[#002D5B]">Fakultas: </span>
                     <span className="text-gray-700">{item.nama_fakultas || "-"}</span>
                   </div>
-
                   <div className="text-[12px]">
                     <span className="font-semibold text-[#002D5B]">Mentor: </span>
                     <span className="text-gray-700">{item.nama_mentor || "-"}</span>
                   </div>
-
                   <div className="flex items-center gap-2 pt-2">
                     <button
                       onClick={() => onEdit(item)}

@@ -5,34 +5,51 @@ import Link from "next/link";
 
 interface Kelas {
   id_Kelas: number;
+  id_Fakultas?: number | null;
   nama_kelas: string;
   deskripsi: string | null;
   nama_fakultas: string | null;
   nama_mentor: string | null;
-  Fakultas?: { nama_fakultas?: string | null };
+  Fakultas?: { id_Fakultas?: number; nama_fakultas?: string | null };
   Mentor?: { nama_mentor?: string | null };
 }
 
-export default function DashboardClasses() {
+const ClassesDashboard = () => {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
   const [data, setData] = useState<Kelas[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const fetchLatest = async () => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
-    const res = await fetch(`${backendUrl}/api/admin/kelas?page=1&limit=5`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    const json = await res.json();
-    if (res.ok) {
-      const normalized = (json.data || []).map((row: Kelas) => ({
-        ...row,
-        nama_fakultas: row.nama_fakultas ?? row.Fakultas?.nama_fakultas ?? null,
-        nama_mentor: row.nama_mentor ?? row.Mentor?.nama_mentor ?? null,
-      }));
-      setData(normalized);
+    setLoading(true);
+    setError("");
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+      if (!token) {
+        setError("Admin token not found. Please login again.");
+        setLoading(false);
+        return;
+      }
+      const res = await fetch(`${backendUrl}/api/admin/kelas?page=1&limit=5`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (res.ok) {
+        const normalized = (json.data || []).map((row: Kelas) => ({
+          ...row,
+          id_Fakultas: row.id_Fakultas ?? row.Fakultas?.id_Fakultas ?? null,
+          nama_fakultas: row.nama_fakultas ?? row.Fakultas?.nama_fakultas ?? null,
+          nama_mentor: row.nama_mentor ?? row.Mentor?.nama_mentor ?? null,
+        }));
+        setData(normalized);
+      } else {
+        setError(json.message || "Gagal mengambil data kelas");
+      }
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -43,6 +60,13 @@ export default function DashboardClasses() {
     return (
       <div className="text-center py-6 text-gray-500 text-sm">
         Loading kelas...
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="text-center py-10 text-red-500 text-sm border rounded-xl bg-white">
+        {error}
       </div>
     );
 
@@ -78,7 +102,7 @@ export default function DashboardClasses() {
         {data.map((item) => (
           <Link
             key={item.id_Kelas}
-            href={`/admin/kelas/${item.id_Kelas}`}
+            href={`/admin/kelas/${item.id_Fakultas || ''}/${item.id_Kelas}`}
           >
             <div
               className="
@@ -114,4 +138,6 @@ export default function DashboardClasses() {
       </div>
     </div>
   );
-}
+};
+
+export default ClassesDashboard;

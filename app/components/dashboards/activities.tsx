@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 
 interface Aktivitas {
   title: string;
@@ -10,32 +9,37 @@ interface Aktivitas {
 }
 
 const DashboardActivities = () => {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
   const [activities, setActivities] = useState<Aktivitas[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchActivities = async () => {
-      const [{ data: users }, { data: kelas }] = await Promise.all([
-        supabase.from("User").select("nama_lengkap, created_at").order("created_at", { ascending: false }).limit(3),
-        supabase.from("Kelas").select("nama_kelas, id_Kelas").order("id_Kelas", { ascending: false }).limit(3),
-      ]);
-
-      const userActivities =
-        users?.map((u) => ({
-          title: "User baru mendaftar",
-          desc: u.nama_lengkap,
-          time: new Date(u.created_at).toLocaleDateString("id-ID"),
-        })) || [];
-
-      const kelasActivities =
-        kelas?.map((k) => ({
-          title: "Kelas baru dibuat",
-          desc: k.nama_kelas,
-          time: "Baru saja",
-        })) || [];
-
-      setActivities([...userActivities, ...kelasActivities]);
+      setLoading(true);
+      setError("");
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+        if (!token) {
+          setError("Admin token not found. Please login again.");
+          setLoading(false);
+          return;
+        }
+        const res = await fetch(`${backendUrl}/api/admin/activities`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (res.ok) {
+          setActivities(json.data || []);
+        } else {
+          setError(json.message || "Gagal mengambil data aktivitas");
+        }
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
     };
-
     fetchActivities();
   }, []);
 
@@ -47,7 +51,11 @@ const DashboardActivities = () => {
       </div>
 
       <div className="divide-y divide-gray-100">
-        {activities.length > 0 ? (
+        {loading ? (
+          <p className="text-sm text-gray-500 text-center py-3">Loading aktivitas...</p>
+        ) : error ? (
+          <p className="text-sm text-red-500 text-center py-3">{error}</p>
+        ) : activities.length > 0 ? (
           activities.map((item, i) => (
             <div key={i} className="flex justify-between items-center py-3">
               <div>

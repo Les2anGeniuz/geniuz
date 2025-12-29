@@ -52,7 +52,6 @@ const Achievements: React.FC = () => {
     fetchAchievements();
   }, [API_BASE, router]);
 
-  // Fungsi untuk mendapatkan ikon berdasarkan target tugas sesuai desain
   const getAchievementIcon = (target: number) => {
     switch (target) {
       case 50:
@@ -68,15 +67,15 @@ const Achievements: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="w-full h-[390px] bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex items-center justify-center">
+      <div className="w-[600px] h-[390px] bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#064479]" />
       </div>
     );
   }
 
   return (
-    <div className="w-full h-[390px] bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col">
-      {/* Header sesuai standar dashboard Anda */}
+    <div className="w-[600px] h-[390px] bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col">
+      {/* Header */}
       <h2 className="text-[28px] font-extrabold text-[#0f172a] mb-6 flex-shrink-0">
         Pencapaian
       </h2>

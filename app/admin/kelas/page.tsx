@@ -122,7 +122,6 @@ export default function KelasPage() {
       json = {};
     }
 
-    // backend returns { fakultas: [...] }
     if (res.ok) setFakultas(json.data || json.fakultas || []);
     else {
       console.error("Gagal fetch fakultas", { status: res.status, statusText: res.statusText, url, body: json });
@@ -148,7 +147,7 @@ export default function KelasPage() {
       json = {};
     }
 
-    // backend returns { mentor: [...] }
+
     if (res.ok) setMentor(json.data || json.mentor || []);
     else {
       console.error("Gagal fetch mentor", { status: res.status, statusText: res.statusText, url, body: json });

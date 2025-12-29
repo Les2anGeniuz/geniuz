@@ -28,15 +28,12 @@ const Activities: React.FC = () => {
       if (!token) return;
 
       try {
-        // Mengambil data dari endpoint /dashboard/activity
         const response = await fetch(`${API_BASE}/dashboard/activity`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
 
         if (response.ok) {
-          // Menampilkan log untuk memastikan 10 data sudah masuk
-          console.log("10 Aktivitas Terbaru:", data.activity);
           setActivities(data.activity || []);
         }
       } catch (error) {
@@ -84,18 +81,22 @@ const Activities: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="w-[600px] h-32 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      <div className="w-full">
+        <h1 className="text-3xl font-semibold text-black mb-3">Aktivitas Terbaru</h1>
+        <div className="w-[600px] h-[330px] bg-white border border-gray-200 rounded-xl flex items-center justify-center shadow-sm">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="w-full">
+      {/* Header di luar kartu agar sama dengan Overview */}
       <h1 className="text-3xl font-semibold text-black mb-3">Aktivitas Terbaru</h1>
 
-      {/* Kontainer tetap h-[330px] & w-[600px] sesuai permintaan sebelumnya */}
-      <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-5 shadow-sm h-[330px] flex flex-col">
+      {/* Kontainer kartu dengan ukuran tetap w-[600px] dan p-6 */}
+      <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-6 shadow-sm h-[330px] flex flex-col">
         <div className="flex-1 overflow-y-auto pr-2 space-y-4 scrollbar-thin scrollbar-thumb-gray-200">
           {activities.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center py-10">

@@ -37,6 +37,10 @@ const Sidebar: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
 
+  // GANTI NOMOR INI dengan nomor WhatsApp admin Geniuz (gunakan kode negara, misal 62)
+  const WHATSAPP_NUMBER = "6285524450205"; 
+  const WHATSAPP_MESSAGE = encodeURIComponent("Halo Geniuz Support, saya butuh bantuan terkait layanan...");
+
   const API_BASE = useMemo(() => process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:5000/api", []);
 
   const handleLogout = () => {
@@ -81,11 +85,7 @@ const Sidebar: React.FC = () => {
             idFakultas: k.id_Fakultas ?? "11"
           }))
           .filter(c => c.label !== "")
-          .sort((a, b) => {
-
-            return Number(a.idKelas) - Number(b.idKelas);
-
-          });
+          .sort((a, b) => Number(a.idKelas) - Number(b.idKelas));
 
         setUserData({ 
           name: profile?.nama_lengkap?.trim() || "User", 
@@ -139,6 +139,18 @@ const Sidebar: React.FC = () => {
               <Image src="/setting.svg" alt="Settings" width={18} height={18} className={pathname === "/settings" ? "brightness-0 invert" : ""} />
               <span>Pengaturan</span>
             </Link>
+          </li>
+          {/* MENU CALL SERVICE KE WHATSAPP */}
+          <li>
+            <a 
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 py-2.5 px-4 rounded-lg transition-all duration-200 text-sm font-medium w-full cursor-pointer text-[#0a4378] hover:bg-gray-100"
+            >
+              <Image src="/callService.svg" alt="Call Service" width={18} height={18} />
+              <span>Call Service</span>
+            </a>
           </li>
         </ul>
       </div>

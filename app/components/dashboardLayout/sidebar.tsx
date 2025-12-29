@@ -41,7 +41,7 @@ const Sidebar: React.FC = () => {
   const WHATSAPP_NUMBER = "6285524450205"; 
   const WHATSAPP_MESSAGE = encodeURIComponent("Halo Geniuz Support, saya butuh bantuan terkait layanan...");
 
-  const API_BASE = useMemo(() => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api", []);
+  const API_BASE = useMemo(() => process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:5000/api", []);
 
   const handleLogout = () => {
     clearToken();

@@ -17,4 +17,21 @@ async function getPengumpulanTugas(req, res) {
   res.json(data);
 }
 
-export { getPengumpulanTugas };
+
+// POST /admin/tugas/:idTugas/pengumpulan/:idPengumpulan/nilai
+async function updateNilaiPengumpulanTugas(req, res) {
+  const { idPengumpulan } = req.params;
+  const { nilai } = req.body;
+  if (!idPengumpulan || typeof nilai === 'undefined') {
+    return res.status(400).json({ error: "idPengumpulan dan nilai wajib diisi" });
+  }
+  // Update nilai pada Pengumpulan_Tugas
+  const { error } = await supabaseAdmin
+    .from("Pengumpulan_Tugas")
+    .update({ nilai })
+    .eq("id_Pengumpulan", idPengumpulan);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+}
+
+export { getPengumpulanTugas, updateNilaiPengumpulanTugas };

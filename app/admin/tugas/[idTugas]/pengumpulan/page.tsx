@@ -11,6 +11,41 @@ export default function PengumpulanTugasPage({ params }: { params: Promise<{ idT
   const { idTugas } = use(params);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [nilaiInput, setNilaiInput] = useState<{ [key: string]: string }>({});
+  const [saving, setSaving] = useState<{ [key: string]: boolean }>({});
+    // Handler untuk perubahan input nilai
+    const handleNilaiChange = (idPengumpulan: string, value: string) => {
+      setNilaiInput((prev) => ({ ...prev, [idPengumpulan]: value }));
+    };
+
+    // Handler untuk submit nilai
+    const handleSubmitNilai = async (idPengumpulan: string) => {
+      setSaving((prev) => ({ ...prev, [idPengumpulan]: true }));
+      try {
+        const res = await fetch(`/api/admin/tugas/${idTugas}/pengumpulan/${idPengumpulan}/nilai`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("admin_token") : ""}`,
+          },
+          body: JSON.stringify({ nilai: nilaiInput[idPengumpulan] }),
+        });
+        if (res.ok) {
+          // Update nilai pada submissions
+          setSubmissions((prev) => prev.map((item) =>
+            item.id_Pengumpulan === idPengumpulan
+              ? { ...item, nilai: nilaiInput[idPengumpulan] }
+              : item
+          ));
+        } else {
+          alert("Gagal menyimpan nilai.");
+        }
+      } catch {
+        alert("Terjadi kesalahan saat menyimpan nilai.");
+      } finally {
+        setSaving((prev) => ({ ...prev, [idPengumpulan]: false }));
+      }
+    };
   const router = useRouter();
 
   useEffect(() => {
@@ -62,6 +97,7 @@ export default function PengumpulanTugasPage({ params }: { params: Promise<{ idT
                     <th className="py-2 px-4 text-left">File</th>
                     <th className="py-2 px-4 text-left">Tanggal Submit</th>
                     <th className="py-2 px-4 text-left">Nilai</th>
+                    <th className="py-2 px-4 text-left">Beri Penilaian</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -78,6 +114,36 @@ export default function PengumpulanTugasPage({ params }: { params: Promise<{ idT
                         </td>
                         <td className="py-2 px-4">{item.tanggal_submit ? new Date(item.tanggal_submit).toLocaleString() : "-"}</td>
                         <td className="py-2 px-4">{item.nilai ?? "-"}</td>
+                        <td className="py-2 px-4">
+                          <form
+                            onSubmit={e => {
+                              e.preventDefault();
+                              handleSubmitNilai(item.id_Pengumpulan);
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              className="border rounded px-2 py-1 w-20"
+                              value={
+                                nilaiInput[item.id_Pengumpulan] !== undefined
+                                  ? nilaiInput[item.id_Pengumpulan]
+                                  : (item.nilai ?? "")
+                              }
+                              onChange={e => handleNilaiChange(item.id_Pengumpulan, e.target.value)}
+                              placeholder="Nilai"
+                            />
+                            <button
+                              type="submit"
+                              className="bg-[#002D5B] text-white px-2 py-1 rounded text-xs hover:bg-[#17457b] disabled:opacity-60"
+                              disabled={saving[item.id_Pengumpulan]}
+                            >
+                              {saving[item.id_Pengumpulan] ? "Menyimpan..." : "Simpan"}
+                            </button>
+                          </form>
+                        </td>
                       </tr>
                     ))
                   ) : (

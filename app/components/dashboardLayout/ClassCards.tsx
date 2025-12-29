@@ -138,22 +138,24 @@ const ClassCards: React.FC = () => {
   }, [API_BASE, router]);
 
   return (
-    <div className="w-full mt-10">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-4xl font-extrabold text-[#0f172a]">Kelas</h2>
+    /* Perbaikan utama: Menggunakan lebar maksimal 1224px agar sejajar dengan komponen atas */
+    <div className="max-w-[1224px] w-full mt-12">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-[40px] font-extrabold text-[#0f172a]">Kelas</h2>
       </div>
 
       {loading ? (
-        <div className="text-gray-400 text-sm py-10 text-center">Memuat kelas...</div>
+        <div className="text-gray-400 text-sm py-20 text-center">Memuat kelas...</div>
       ) : kelas.length === 0 ? (
-        <div className="text-gray-400 text-sm py-10 text-center">Belum ada kelas.</div>
+        <div className="text-gray-400 text-sm py-20 text-center">Belum ada kelas diikuti.</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8 auto-rows-fr">
+        /* Gap disesuaikan agar pas menempati seluruh lebar 1224px */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr">
           {kelas.map((k) => {
             const idF = k.id_Fakultas ?? "11";
             const idK = k.id_Kelas ?? "";
             const href = `/Kelas/${idF}/${idK}`;
-            const cover = (k.thumbnail_url || "").trim() || "/Frame 2610785.svg"; // Default image if no URL
+            const cover = (k.thumbnail_url || "").trim() || "/Frame 2610785.svg";
 
             let mentorNama = (k.mentor_nama || "").trim();
             let mentorFoto = (k.mentor_foto || "").trim();
@@ -170,37 +172,39 @@ const ClassCards: React.FC = () => {
               <Link
                 key={`${idF}-${idK}-${k.nama_kelas}`}
                 href={href}
-                className="block h-full"
+                className="block h-full group"
               >
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition h-full flex flex-col cursor-pointer">
-                  <div className="relative w-full aspect-[16/9] bg-gray-100 flex-shrink-0">
+                <div className="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 h-full flex flex-col">
+                  {/* Thumbnail Area */}
+                  <div className="relative w-full aspect-[1.4/1] bg-gray-100 flex-shrink-0">
                     <Image
                       src={cover}
                       alt={k.nama_kelas || "Kelas"}
                       fill
-                      className="object-cover"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
 
-                  <div className="p-5 flex flex-col flex-1">
-                    <h3 className="text-2xl font-extrabold text-[#0f172a] leading-tight line-clamp-2 min-h-[64px]">
+                  {/* Content Area */}
+                  <div className="p-6 flex flex-col flex-1">
+                    <h3 className="text-[22px] font-extrabold text-[#0f172a] leading-tight line-clamp-2 min-h-[56px] mb-4">
                       {k.nama_kelas}
                     </h3>
 
-                    <div className="h-px bg-gray-200 my-4" />
+                    <div className="h-px bg-gray-100 w-full mb-5" />
 
                     <div className="mt-auto flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 relative flex items-center justify-center">
+                      <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-100 relative flex items-center justify-center border border-gray-50">
                         {hasFoto ? (
                           <Image src={mentorFoto} alt={mentorNama} fill className="object-cover" />
                         ) : (
-                          <span className="text-sm font-bold text-gray-600">{mentorInitial}</span>
+                          <span className="text-base font-bold text-gray-400">{mentorInitial}</span>
                         )}
                       </div>
 
                       <div className="leading-tight">
                         <div className="text-sm font-bold text-[#0f172a]">{mentorNama}</div>
-                        <div className="text-sm text-gray-500">Mentor</div>
+                        <div className="text-xs text-gray-500 font-medium">Mentor</div>
                       </div>
                     </div>
                   </div>

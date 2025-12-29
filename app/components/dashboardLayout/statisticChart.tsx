@@ -46,14 +46,18 @@ const StatisticsChart: React.FC = () => {
         const data = await response.json();
 
         if (response.ok) {
-          // Menggunakan palet warna dari image_15.png
+          // Sinkronisasi warna sesuai palet brand
           setChartData([
-            // Pengerjaan Tugas -> Main Color (#064479)
-            { name: "Pengerjaan Tugas", value: data.tugas ?? 0, color: "#064479" },
-            // Materi Ditonton -> Biru Sedang (sebagai transisi)
-            { name: "Materi Ditonton", value: data.materi ?? 0, color: "#3b82f6" },
-            // Kehadiran -> Accent Cyan (#00D9FF)
-            { name: "Kehadiran", value: data.absen ?? 0, color: "#00D9FF" },
+            { 
+              name: "Pengerjaan Tugas", 
+              value: data.tugas ?? 0, 
+              color: "#064479" // Main Color
+            },
+            { 
+              name: "Materi Ditonton", 
+              value: data.materi ?? 0, 
+              color: "#00D9FF" // Accent Cyan
+            },
           ]);
         }
       } catch (err) {
@@ -71,7 +75,7 @@ const StatisticsChart: React.FC = () => {
   if (loading) {
     return (
       <div className="w-full bg-white border border-gray-200 rounded-2xl p-6 shadow-sm h-[390px] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#064479]" />
       </div>
     );
   }
@@ -89,25 +93,27 @@ const StatisticsChart: React.FC = () => {
                 cx="50%"
                 cy="45%"
                 innerRadius={70}
-                outerRadius={100}
-                paddingAngle={8}
+                outerRadius={105}
+                paddingAngle={0} // FIX: Set ke 0 untuk menghilangkan celah
                 dataKey="value"
+                stroke="none" // FIX: Hilangkan garis tepi agar segmen terlihat menyatu
+                startAngle={90} // Mengatur agar posisi mulai dari atas
+                endAngle={450}
               >
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                  <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
               <Tooltip 
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                 formatter={(value) => [value, "Jumlah"]} 
               />
-              {/* Legend dengan font lebih kecil (text-xs) */}
               <Legend 
                 verticalAlign="bottom" 
                 align="center" 
                 iconType="circle" 
                 wrapperStyle={{ paddingTop: '20px' }}
-                formatter={(value) => <span className="text-xs font-medium text-gray-600">{value}</span>}
+                formatter={(value) => <span className="text-xs font-bold text-gray-600">{value}</span>}
               />
             </PieChart>
           </ResponsiveContainer>

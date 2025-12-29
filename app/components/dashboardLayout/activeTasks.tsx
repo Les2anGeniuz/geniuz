@@ -1,3 +1,4 @@
+"use client";
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -20,7 +21,6 @@ const ActiveTasks: React.FC = () => {
     []
   );
 
-  // --- LOGIKA ASLI TETAP DIPERTAHANKAN ---
   useEffect(() => {
     const controller = new AbortController();
 
@@ -99,8 +99,9 @@ const ActiveTasks: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-white border border-gray-200 rounded-2xl p-6 shadow-sm h-[390px] flex flex-col">
-      {/* Header - Ukuran text-[28px] sesuai Kelas Saya */}
+    /* Ukuran kartu disamakan ke w-[600px] dan h-[390px] */
+    <div className="w-[600px] bg-white border border-gray-200 rounded-2xl p-6 shadow-sm h-[390px] flex flex-col">
+      {/* Header */}
       <div className="mb-4">
         <h2 className="text-[28px] leading-none font-extrabold text-[#0f172a]">
           Tugas Aktif
@@ -110,7 +111,9 @@ const ActiveTasks: React.FC = () => {
       {/* List Area - Scrollable */}
       <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 space-y-4">
         {loading ? (
-          <p className="text-gray-400 text-sm text-center py-10">Memuat data...</p>
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#064479]" />
+          </div>
         ) : error ? (
           <p className="text-red-500 text-sm text-center py-10">{error}</p>
         ) : tasks.length > 0 ? (
@@ -124,24 +127,21 @@ const ActiveTasks: React.FC = () => {
                 href={`/tugas/${task.id_Tugas}`} 
                 className="block group"
               >
-                {/* Card besar (min-h-[250px]) agar memenuhi area sesuai desain */}
+                {/* Card besar (min-h-[250px]) sesuai desain Anda */}
                 <div
                   className="w-full bg-[#f8fafc] rounded-[24px] border border-gray-200 p-8 
                              transition group-hover:bg-[#f1f5f9] group-hover:border-gray-300 cursor-pointer flex flex-col min-h-[250px] justify-between"
                 >
-                  {/* Judul Tugas - Font dikecilkan ke text-[26px] sesuai permintaan */}
                   <h3 className="text-[26px] font-extrabold text-[#0f172a] leading-tight group-hover:text-blue-700 transition">
                     {task.judul_tugas}
                   </h3>
 
-                  {/* Deadline & Dot Indicator */}
                   <div className="flex justify-between items-end">
                     <div className="text-lg font-bold text-[#0f172a] leading-tight">
                       <p>{formatIndoDate(task.tenggat_waktu || task.tanggal_selesai)}</p>
                       <p className="font-medium text-gray-500">{formatIndoTime(task.tenggat_waktu || task.tanggal_selesai)}</p>
                     </div>
 
-                    {/* Status Dot */}
                     <div className={`w-4 h-4 rounded-full ${dotColor} shadow-[0_0_8px_rgba(0,0,0,0.1)]`} />
                   </div>
                 </div>
@@ -150,13 +150,13 @@ const ActiveTasks: React.FC = () => {
           })
         ) : (
           <div className="flex-1 flex flex-col justify-center items-center text-center py-10">
-            <p className="text-gray-400 font-medium">Belum ada tugas aktif.</p>
+            <p className="text-gray-400 font-medium italic">Belum ada tugas aktif.</p>
           </div>
         )}
       </div>
 
-      {/* Legend - Teks "Belum Dikerjakan" tidak italic */}
-      <div className="flex gap-6 mt-4">
+      {/* Legend */}
+      <div className="flex gap-6 mt-4 flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500" />
           <span className="text-xs text-gray-500 font-medium">Selesai</span>

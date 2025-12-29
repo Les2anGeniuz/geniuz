@@ -4,188 +4,93 @@ import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-type DashProfile = {
-  nama_lengkap?: string | null;
-  nama_fakultas?: string | null;
-};
-
-type MeProfile = {
-  foto_profil?: string | null;
-};
-
-type DashOverview = {
-  total_kelas?: number;
-  tugas_selesai?: number;
-  progress?: number;
-};
-
 const TOKEN_KEY = "access_token";
-const getToken = () =>
-  typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY);
-const clearToken = () =>
-  typeof window !== "undefined" && localStorage.removeItem(TOKEN_KEY);
+const getToken = () => typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY);
 
 const Overview: React.FC = () => {
-  const [profile, setProfile] = useState<DashProfile | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [fotoProfil, setFotoProfil] = useState<string>("");
-  const [imgError, setImgError] = useState(false);
-
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState("");
-
-  const [statistics, setStatistics] = useState({
-    totalClasses: 0,
-    completedTasks: 0,
-    progress: 0,
-  });
+  const [statistics, setStatistics] = useState({ totalClasses: 0, completedTasks: 0, progress: 0 });
 
   const router = useRouter();
-
-  const API_BASE = useMemo(
-    () => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api",
-    []
-  );
+  const API_BASE = useMemo(() => process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api", []);
 
   useEffect(() => {
-    const controller = new AbortController();
-
-    const apiGet = async <T,>(path: string, token: string): Promise<T> => {
-      const url = `${API_BASE}${path}`;
-      const res = await fetch(url, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-        signal: controller.signal,
-      });
-
-      if (res.status === 401) {
-        clearToken();
-        router.replace("/login");
-        throw new Error("Unauthorized");
-      }
-
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`Request gagal ${res.status}: ${text}`);
-      }
-
-      return (await res.json()) as T;
-    };
-
-    (async () => {
-      setLoading(true);
-      setErrorMsg("");
+    const fetchData = async () => {
+      const token = getToken();
+      if (!token) { router.replace("/login"); return; }
 
       try {
-        const token = getToken();
-        if (!token) {
-          router.replace("/login");
-          return;
-        }
-
-        // Mengambil data secara paralel dari 3 endpoint
-        const [dashProf, meProf, ov] = await Promise.all([
-          apiGet<DashProfile>("/dashboard/profile", token),
-          apiGet<MeProfile>("/me/profile", token),
-          apiGet<DashOverview>("/dashboard/overview", token),
+        const headers = { Authorization: `Bearer ${token}` };
+        const [pRes, mRes, oRes] = await Promise.all([
+          fetch(`${API_BASE}/dashboard/profile`, { headers }),
+          fetch(`${API_BASE}/me/profile`, { headers }),
+          fetch(`${API_BASE}/dashboard/overview`, { headers })
         ]);
 
-        setProfile(dashProf);
-        setFotoProfil((meProf?.foto_profil || "").trim());
-        setImgError(false);
+        const prof = await pRes.json();
+        const me = await mRes.json();
+        const ov = await oRes.json();
 
-        // Sinkronisasi statistik dengan data backend terbaru
+        setProfile(prof);
+        setFotoProfil(me?.foto_profil || "");
         setStatistics({
-          totalClasses: Number(ov?.total_kelas ?? 0),
-          completedTasks: Number(ov?.tugas_selesai ?? 0), // Menampilkan jumlah pengumpulan
-          progress: Number(ov?.progress ?? 0),
+          totalClasses: ov.total_kelas || 0,
+          completedTasks: ov.tugas_selesai || 0,
+          progress: ov.progress || 0
         });
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
-        console.error("[Overview] Error:", e);
-        setErrorMsg(e?.message || "Terjadi kesalahan sistem.");
+      } catch (e) {
+        console.error("Overview Fetch Error:", e);
       } finally {
         setLoading(false);
       }
-    })();
-
-    return () => controller.abort();
+    };
+    fetchData();
   }, [API_BASE, router]);
 
-  if (loading) {
-    return (
-      <div className="w-full h-64 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-        <span className="ml-3 text-gray-500">Memuat data belajar...</span>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="w-[600px] h-64 flex items-center justify-center bg-white border border-gray-200 rounded-xl shadow-sm">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+    </div>
+  );
 
-  if (errorMsg) {
-    return (
-      <div className="w-full">
-        <h1 className="text-3xl font-semibold text-black mb-3">Overview</h1>
-        <div className="w-[600px] bg-white border border-red-200 rounded-xl p-6 shadow-sm">
-          <p className="text-red-600 font-semibold">Gagal memuat data</p>
-          <p className="text-gray-600 mt-1">{errorMsg}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const fullName = profile?.nama_lengkap?.trim() || "Siswa";
+  const fullName = profile?.nama_lengkap || "Siswa";
   const initial = fullName.charAt(0).toUpperCase();
-  const faculty = profile?.nama_fakultas?.trim() || "Fakultas Belum Terdaftar";
-  const showImage = fotoProfil !== "" && !imgError;
 
   return (
     <div className="w-full">
       <h1 className="text-3xl font-semibold text-black mb-3">Overview</h1>
 
-      {/* Profil Card - Tetap w-[600px] */}
-      <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-6 mb-6 flex flex-col md:flex-row items-center gap-6 shadow-sm">
-        <div className="flex-shrink-0">
-          <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-gray-100 overflow-hidden relative flex items-center justify-center">
-            {showImage ? (
-              <Image
-                src={fotoProfil}
-                alt="Foto Profil"
-                fill
-                className="object-cover"
-                sizes="128px"
-                priority
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <span className="text-4xl font-bold text-gray-400">{initial}</span>
-            )}
-          </div>
+      {/* Profil Card - Lebar Tetap w-[600px] */}
+      <div className="w-[600px] bg-white border border-gray-200 rounded-xl p-6 mb-6 flex items-center gap-6 shadow-sm">
+        <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-gray-100 overflow-hidden relative flex items-center justify-center">
+          {fotoProfil ? (
+            <Image src={fotoProfil} alt="Foto Profil" fill className="object-cover" />
+          ) : (
+            <span className="text-4xl font-bold text-gray-400">{initial}</span>
+          )}
         </div>
-
-        <div className="flex-grow text-center md:text-left">
-          <h2 className="text-3xl font-bold text-[#09090b] mb-1 leading-tight">
-            Semangat Belajar, <br className="hidden md:block" />
-            {fullName}!
+        <div>
+          <h2 className="text-3xl font-bold text-[#09090b] leading-tight">
+            Semangat Belajar, <br /> {fullName}!
           </h2>
-          <p className="text-blue-500 font-bold text-base">{faculty}</p>
+          <p className="text-blue-500 font-bold text-base mt-1">{profile?.nama_fakultas || "Fakultas Data"}</p>
         </div>
       </div>
 
-      {/* Statistics Cards - Tetap w-[600px] dan h-32 */}
+      {/* Statistics Cards - Total Lebar w-[600px] */}
       <div className="flex justify-between w-[600px] gap-6">
-        <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
-          <span className="text-gray-500 font-medium text-sm">Kelas Diikuti</span>
-          <span className="text-2xl font-bold text-[#09090b]">{statistics.totalClasses}</span>
-        </div>
-
-        <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
-          <span className="text-gray-500 font-medium text-sm">Tugas Selesai</span>
-          <span className="text-2xl font-bold text-[#09090b]">{statistics.completedTasks}</span>
-        </div>
-
-        <div className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
-          <span className="text-gray-500 font-medium text-sm">Progress Belajar</span>
-          <span className="text-2xl font-bold text-[#09090b]">{statistics.progress}%</span>
-        </div>
+        {[
+          { label: "Kelas Diikuti", value: statistics.totalClasses, suffix: "" },
+          { label: "Tugas Selesai", value: statistics.completedTasks, suffix: "" },
+          { label: "Progress Belajar", value: statistics.progress, suffix: "%" }
+        ].map((item, idx) => (
+          <div key={idx} className="w-1/3 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between items-center h-32">
+            <span className="text-gray-500 font-medium text-sm">{item.label}</span>
+            <span className="text-2xl font-bold text-[#09090b]">{item.value}{item.suffix}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

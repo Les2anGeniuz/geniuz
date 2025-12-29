@@ -1,10 +1,10 @@
-// dashboardcontroller.js
+// dashboardController.js
 import { supabaseAdmin } from "../services/supabase.js";
 
 /** * HELPER FUNCTIONS 
  */
 
-/** Ambil pendaftaran terakhir user (untuk mendapatkan id_Fakultas) */
+/** Ambil pendaftaran terakhir user untuk mendapatkan id_Fakultas & Instansi */
 const getLatestPendaftaran = async (userId) => {
   const { data, error } = await supabaseAdmin
     .from("Pendaftaran")
@@ -17,7 +17,7 @@ const getLatestPendaftaran = async (userId) => {
   return data?.[0] ?? null;
 };
 
-/** Ambil daftar ID Kelas milik user */
+/** Menentukan daftar ID Kelas milik user berdasarkan Progress atau Fakultas */
 const getUserKelasIds = async (userId) => {
   // 1. Cek dari tabel Progress terlebih dahulu
   const { data: prog, error: progErr } = await supabaseAdmin
@@ -30,7 +30,7 @@ const getUserKelasIds = async (userId) => {
   const fromProgress = [...new Set((prog || []).map((r) => r.id_Kelas).filter(Boolean))];
   if (fromProgress.length > 0) return fromProgress;
 
-  // 2. Jika Progress kosong, ambil semua kelas berdasarkan Fakultas pendaftaran terakhir
+  // 2. Jika Progress kosong, ambil berdasarkan Fakultas pendaftaran terakhir
   const latest = await getLatestPendaftaran(userId);
   if (!latest?.id_Fakultas) return [];
 
@@ -44,18 +44,7 @@ const getUserKelasIds = async (userId) => {
   return [...new Set((kelasRows || []).map((k) => k.id_Kelas).filter(Boolean))];
 };
 
-const getKelasRowsByIds = async (kelasIds) => {
-  if (!kelasIds.length) return [];
-  const { data, error } = await supabaseAdmin
-    .from("Kelas")
-    .select("id_Kelas, id_Fakultas, id_Mentor, nama_kelas, deskripsi")
-    .in("id_Kelas", kelasIds);
-
-  if (error) throw new Error(error.message);
-  return data || [];
-};
-
-/** * DASHBOARD CONTROLLERS 
+/** * EXPORTED CONTROLLERS 
  */
 
 /** 1. PROFIL DASHBOARD */
@@ -98,38 +87,35 @@ export const getDashboardProfile = async (req, res) => {
   }
 };
 
-/** 2. OVERVIEW STATS (Total Kelas, Selesai, Progress) */
+/** 2. OVERVIEW STATS (Tugas Selesai & Perhitungan Progress Akurat) */
 export const getDashboardOverview = async (req, res) => {
   try {
     const userId = req.user?.id_User;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const kelasIds = await getUserKelasIds(userId);
-    
-    // Hitung Tugas Selesai: Semua yang sudah dikumpulkan
-    const { data: pengumpulan, error: pengErr } = await supabaseAdmin
-      .from("Pengumpulan_Tugas")
-      .select("id_Pengumpulan")
-      .eq("id_User", userId);
+    if (!kelasIds.length) return res.status(200).json({ total_kelas: 0, tugas_selesai: 0, progress: 0 });
 
-    if (pengErr) throw new Error(pengErr.message);
+    // Ambil total Materi dan Tugas yang tersedia di kelas user
+    const [{ count: totalMateri }, { count: totalTugas }] = await Promise.all([
+      supabaseAdmin.from("Materi").select("*", { count: 'exact', head: true }).in("id_Kelas", kelasIds),
+      supabaseAdmin.from("Tugas").select("*", { count: 'exact', head: true }).in("id_Kelas", kelasIds)
+    ]);
 
-    const { data: progressRows, error: progErr } = await supabaseAdmin
-      .from("Progress")
-      .select("Prsentase_Progress")
-      .eq("id_User", userId);
+    // Ambil jumlah Materi ditonton dan Tugas dikumpulkan
+    const [{ count: materiSelesai }, { count: tugasSelesai }] = await Promise.all([
+      supabaseAdmin.from("Progress_Materi").select("*", { count: 'exact', head: true }).eq("id_User", userId).eq("sudah_tonton", true),
+      supabaseAdmin.from("Pengumpulan_Tugas").select("*", { count: 'exact', head: true }).eq("id_User", userId)
+    ]);
 
-    if (progErr) throw new Error(progErr.message);
-
-    let progress = 0;
-    if (progressRows?.length > 0) {
-      const total = progressRows.reduce((sum, row) => sum + Number(row.Prsentase_Progress || 0), 0);
-      progress = Math.round(total / progressRows.length);
-    }
+    // Hitung persentase progress gabungan
+    const totalItem = (totalMateri || 0) + (totalTugas || 0);
+    const itemSelesai = (materiSelesai || 0) + (tugasSelesai || 0);
+    const progress = totalItem > 0 ? Math.round((itemSelesai / totalItem) * 100) : 0;
 
     return res.status(200).json({ 
       total_kelas: kelasIds.length, 
-      tugas_selesai: pengumpulan?.length || 0, 
+      tugas_selesai: tugasSelesai || 0, 
       progress 
     });
   } catch (e) {
@@ -179,18 +165,18 @@ export const getDashboardActivity = async (req, res) => {
     const kelasIds = await getUserKelasIds(userId);
     if (!kelasIds.length) return res.status(200).json({ activity: [] });
 
-    const { data: mRows } = await supabaseAdmin.from("Materi").select("judul_materi, Tanggal_tayang").in("id_Kelas", kelasIds).order("Tanggal_tayang", { ascending: false }).limit(10);
-    const { data: tRows } = await supabaseAdmin.from("Tugas").select("judul_tugas, tanggal_selesai").in("id_Kelas", kelasIds).order("tanggal_selesai", { ascending: true }).limit(10);
-    const { data: sRows } = await supabaseAdmin.from("Pengumpulan_Tugas").select("tanggal_submit, nilai").eq("id_User", userId).order("tanggal_submit", { ascending: false }).limit(10);
+    const { data: mRows } = await supabaseAdmin.from("Materi").select("judul_materi, Tanggal_tayang").in("id_Kelas", kelasIds).limit(10);
+    const { data: tRows } = await supabaseAdmin.from("Tugas").select("judul_tugas, tanggal_selesai").in("id_Kelas", kelasIds).limit(10);
+    const { data: sRows } = await supabaseAdmin.from("Pengumpulan_Tugas").select("tanggal_submit, nilai").eq("id_User", userId).limit(10);
 
     const mAct = (mRows || []).map(m => ({ type: "materi", title: `Materi Baru: ${m.judul_materi}`, timestamp: m.Tanggal_tayang }));
     const tAct = (tRows || []).map(t => ({ type: "deadline", title: `Deadline: ${t.judul_tugas}`, timestamp: t.tanggal_selesai }));
-    const sAct = (sRows || []).map(s => ({ type: "submit", title: s.nilai ? "Feedback Tugas Tersedia" : "Tugas Telah Dikumpulkan", timestamp: s.tanggal_submit }));
+    const sAct = (sRows || []).map(s => ({ type: "submit", title: s.nilai ? "Feedback Tersedia" : "Tugas Dikumpulkan", timestamp: s.tanggal_submit }));
 
     const all = [...mAct, ...tAct, ...sAct]
       .filter(a => a.timestamp)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, 10); // Menampilkan 10 item terbaru
+      .slice(0, 10);
 
     return res.status(200).json({ activity: all });
   } catch (e) {
@@ -198,7 +184,7 @@ export const getDashboardActivity = async (req, res) => {
   }
 };
 
-/** 5. PENCAPAIAN (ACHIEVEMENT) */
+/** 5. PENCAPAIAN (Achievement) */
 export const getDashboardAchievement = async (req, res) => {
   try {
     const userId = req.user?.id_User;
@@ -224,7 +210,7 @@ export const getDashboardAchievement = async (req, res) => {
   }
 };
 
-/** 6. STATISTIK DASHBOARD (Chart Data: Tugas, Materi, Kehadiran) */
+/** 6. STATISTIK DASHBOARD (Hanya Tugas dan Materi Ditonton) */
 export const getDashboardStatistik = async (req, res) => {
   try {
     const userId = req.user?.id_User;
@@ -236,22 +222,16 @@ export const getDashboardStatistik = async (req, res) => {
       .select("*", { count: 'exact', head: true })
       .eq("id_User", userId);
 
-    // 2. Hitung Materi yang sudah dipelajari (dari tabel Progress)
+    // 2. Hitung Materi yang sudah ditonton (Dari Progress_Materi)
     const { count: materiCount } = await supabaseAdmin
-      .from("Progress")
+      .from("Progress_Materi")
       .select("*", { count: 'exact', head: true })
-      .eq("id_User", userId);
-
-    // 3. Hitung Kehadiran (dari tabel Absensi)
-    const { count: absenCount } = await supabaseAdmin
-      .from("Absensi")
-      .select("*", { count: 'exact', head: true })
-      .eq("id_User", userId);
+      .eq("id_User", userId)
+      .eq("sudah_tonton", true);
 
     return res.status(200).json({
       tugas: tugasCount || 0,
-      materi: materiCount || 0,
-      absen: absenCount || 0
+      materi: materiCount || 0
     });
   } catch (e) {
     return res.status(500).json({ error: e.message });

@@ -9,7 +9,7 @@ interface Aktivitas {
 }
 
 const DashboardActivities = () => {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
   const [activities, setActivities] = useState<Aktivitas[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -25,7 +25,7 @@ const DashboardActivities = () => {
           setLoading(false);
           return;
         }
-        const res = await fetch(`${backendUrl}/api/admin/activities`, {
+        const res = await fetch(`${API}/api/admin/activities`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();

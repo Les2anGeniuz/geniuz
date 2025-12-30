@@ -18,12 +18,11 @@ type AnalyticsApi = {
   error?: string
 }
 
-function backendUrl() {
-  return process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
-}
-
+const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000"
 function formatIDR(n: number) {
   return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
     maximumFractionDigits: 0,
   }).format(n)
 }
@@ -47,7 +46,7 @@ export default function AnalyticsStats() {
     const load = async () => {
       try {
         const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null
-        const res = await fetch(`${backendUrl()}/api/admin/analytics`, {
+        const res = await fetch(`${API}/api/admin/analytics`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           cache: "no-store",
           signal: controller.signal,

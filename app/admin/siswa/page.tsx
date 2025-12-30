@@ -32,7 +32,8 @@ interface Stats {
 }
 
 export default function SiswaPage() {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const backendUrl = API;
   const authHeaders = (): HeadersInit => {
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
     return token ? { Authorization: `Bearer ${token}` } : {};
@@ -68,7 +69,7 @@ export default function SiswaPage() {
       if (search) params.set("search", search);
       if (status !== "all") params.set("status", status);
 
-      const res = await fetch(`${backendUrl}/api/admin/siswa?${params.toString()}`, {
+      const res = await fetch(`${API}/api/admin/siswa?${params.toString()}`, {
         headers: { ...authHeaders() },
       });
 
@@ -106,7 +107,7 @@ export default function SiswaPage() {
 
   useEffect(() => {
     fetchData();
-  }, [backendUrl, search, status, page]);
+  }, [API, search, status, page]);
 
   return (
     <div className="flex min-h-screen bg-[#F4F6F9]">

@@ -51,63 +51,61 @@ export default function KelasTable({ data, onEdit, onDelete }: Props) {
           data.map((item) => (
             <div key={item.id_Kelas}>
               {/* Desktop Row */}
-              <Link href={`/admin/kelas/${item.id_Fakultas}/${item.id_Kelas}`} className="contents">
-                <div
-                  className="hidden md:grid
-                    grid-cols-[1.5fr_1fr_1.3fr_0.3fr]
-                    px-5 py-5 rounded-2xl
-                    bg-white shadow-sm border border-gray-200
-                    hover:shadow-md hover:bg-gray-50
-                    transition-all duration-150
-                    cursor-pointer
-                  "
-                >
-                  {/* NAMA KELAS */}
-                  <div className="pr-6">
-                    <p className="text-[15px] font-bold text-[#002D5B] leading-snug">
-                      {item.nama_kelas}
-                    </p>
-                    <p className="text-[10px] text-gray-500 mt-1 leading-snug">
-                      {item.deskripsi || "Tidak ada deskripsi"}
-                    </p>
-                  </div>
-
-                  {/* FAKULTAS */}
-                  <div className="flex items-center text-[12px] font-semibold text-[#002D5B]">
-                    {item.nama_fakultas || "-"}
-                  </div>
-
-                  {/* MENTOR */}
-                  <div className="flex items-center text-[12px] text-gray-700">
-                    {item.nama_mentor || "-"}
-                  </div>
-
-                  {/* ACTION BUTTONS */}
-                  <div className="flex justify-end items-center gap-2" onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={() => onEdit(item)}
-                      className="
-                        px-4 py-1.5 rounded-full border
-                        text-[12px] font-medium text-gray-600
-                        hover:bg-gray-100 transition
-                      "
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      onClick={() => onDelete(item)}
-                      className="
-                        px-4 py-1.5 rounded-full border border-red-300
-                        text-[12px] font-medium text-red-600
-                        hover:bg-red-50 transition
-                      "
-                    >
-                      Hapus
-                    </button>
-                  </div>
+              <div
+                className="hidden md:grid
+                  grid-cols-[1.5fr_1fr_1.3fr_0.3fr]
+                  px-5 py-5 rounded-2xl
+                  bg-white shadow-sm border border-gray-200
+                  hover:shadow-md hover:bg-gray-50
+                  transition-all duration-150
+                  cursor-pointer
+                "
+              >
+                {/* NAMA KELAS (link ke detail) */}
+                <div className="pr-6">
+                  <Link href={`/admin/kelas/${item.id_Fakultas}/${item.id_Kelas}`} className="text-[15px] font-bold text-[#002D5B] leading-snug hover:underline">
+                    {item.nama_kelas}
+                  </Link>
+                  <p className="text-[10px] text-gray-500 mt-1 leading-snug">
+                    {item.deskripsi || "Tidak ada deskripsi"}
+                  </p>
                 </div>
-              </Link>
+
+                {/* FAKULTAS */}
+                <div className="flex items-center text-[12px] font-semibold text-[#002D5B]">
+                  {item.nama_fakultas || "-"}
+                </div>
+
+                {/* MENTOR */}
+                <div className="flex items-center text-[12px] text-gray-700">
+                  {item.nama_mentor || "-"}
+                </div>
+
+                {/* ACTION BUTTONS */}
+                <div className="flex justify-end items-center gap-2">
+                  <button
+                    onClick={e => { e.stopPropagation(); onEdit(item); }}
+                    className="
+                      px-4 py-1.5 rounded-full border
+                      text-[12px] font-medium text-gray-600
+                      hover:bg-gray-100 transition
+                    "
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={e => { e.stopPropagation(); onDelete(item); }}
+                    className="
+                      px-4 py-1.5 rounded-full border border-red-300
+                      text-[12px] font-medium text-red-600
+                      hover:bg-red-50 transition
+                    "
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </div>
 
               {/* Mobile Card */}
               <div className="md:hidden bg-white rounded-2xl shadow-sm border border-gray-200 px-5 py-4 mb-2">

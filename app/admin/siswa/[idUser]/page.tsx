@@ -16,11 +16,12 @@ export default async function SiswaDetailPage({ params }: { params: { idUser: st
     return <div className="p-10 text-center text-red-500">ID User tidak ditemukan di URL.</div>;
   }
 
-  const API_URL = "http://localhost:5000";
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const API_URL = API;
 
   // Fetch all biodata, pendaftaran, pembayaran from admin API
   async function fetchSiswaDetail(idUser: string, admin_token: string) {
-    const res = await fetch(`${API_URL}/api/admin/siswa/${idUser}?include=pendaftaran,pembayaran`, {
+    const res = await fetch(`${API}/api/admin/siswa/${idUser}?include=pendaftaran,pembayaran`, {
       headers: { Authorization: `Bearer ${admin_token}` },
       cache: "no-store",
     });
@@ -32,7 +33,7 @@ export default async function SiswaDetailPage({ params }: { params: { idUser: st
   // Fetch fakultas name by id
   async function fetchFakultasName(idFakultas: string) {
     if (!idFakultas) return null;
-    const res = await fetch(`${API_URL}/api/fakultas/${idFakultas}`);
+    const res = await fetch(`${API}/api/fakultas/${idFakultas}`);
     if (!res.ok) return null;
     const json = await res.json();
     return json?.fakultas?.nama_fakultas || null;

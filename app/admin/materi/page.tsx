@@ -32,7 +32,7 @@ interface Task {
 }
 
 export default function AdminMateri() {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
   const router = useRouter();
 
   // Helper: get auth headers from either Supabase or backend JWT
@@ -72,7 +72,7 @@ export default function AdminMateri() {
           return;
         }
         const headers = await getAuthHeaders();
-        const res = await fetch(`${backendUrl}/api/admin/kelas?limit=50`, {
+        const res = await fetch(`${API}/api/admin/kelas?limit=50`, {
           headers,
         });
         const json = await res.json();
@@ -83,7 +83,7 @@ export default function AdminMateri() {
       }
     };
     load();
-  }, [backendUrl, router]);
+  }, [API, router]);
 
   useEffect(() => {
     if (!selected) {
@@ -97,10 +97,10 @@ export default function AdminMateri() {
         const headers = await getAuthHeaders();
         const kelasId = selected.id_Kelas ?? selected.id;
         const [mRes, tRes] = await Promise.all([
-          fetch(`${backendUrl}/api/admin/materi?id_Kelas=${kelasId}`, {
+          fetch(`${API}/api/admin/materi?id_Kelas=${kelasId}`, {
             headers,
           }),
-          fetch(`${backendUrl}/api/admin/tugas?id_Kelas=${kelasId}`, {
+          fetch(`${API}/api/admin/tugas?id_Kelas=${kelasId}`, {
             headers,
           }),
         ]);
@@ -119,7 +119,7 @@ export default function AdminMateri() {
       }
     };
     loadDetails();
-  }, [backendUrl, selected]);
+  }, [API, selected]);
 
   const handleAddTask = (t: Task) => {
     setTasks((prev) => [t, ...prev]);

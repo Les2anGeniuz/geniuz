@@ -77,8 +77,8 @@ const SidebarAdmin = () => {
       const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
       if (token) {
         try {
-          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-          const res = await fetch(`${backendUrl}/api/admin/me`, {
+          const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+          const res = await fetch(`${API}/api/admin/me`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },

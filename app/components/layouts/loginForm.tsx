@@ -11,7 +11,7 @@ export default function HeroSection() {
   const [error, setError] = useState("");
 
   // URL backend (pastikan sudah ada .env.local → NEXT_PUBLIC_API_BASE)
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -19,7 +19,7 @@ export default function HeroSection() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
+      const res = await fetch(`${API}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

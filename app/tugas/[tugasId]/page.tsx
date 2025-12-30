@@ -84,7 +84,16 @@ export default function TaskDetailPage({ params }: { params: Promise<{ tugasId: 
           .eq("id_Tugas", tugasId)
           .single();
 
-        if (taskData) setTask(taskData as TaskDetail);
+        if (taskData) {
+          // Kelas is returned as an array, but TaskDetail expects an object
+          const kelasObj = Array.isArray(taskData.Kelas) && taskData.Kelas.length > 0
+            ? { nama_kelas: String(taskData.Kelas[0].nama_kelas) }
+            : undefined;
+          setTask({
+            ...taskData,
+            Kelas: kelasObj,
+          } as TaskDetail);
+        }
       } catch (err) {
         console.error("Gagal memuat data:", err);
       } finally {

@@ -168,11 +168,18 @@ export default function AdminMateri() {
             {/* SEARCH — Notion card */}
             <ClassSearch
               classes={classes.map((c) => ({
-                id: c.id_Kelas ?? c.id,
-                name: c.nama_kelas ?? c.name,
+                id: (c.id_Kelas ?? c.id)?.toString() ?? "",
+                name: c.nama_kelas ?? c.name ?? "",
                 description: c.deskripsi,
               }))}
-              onSelect={(c) => setSelected(c)}
+              onSelect={(c) => {
+                // Convert ClassItem (with string id) to Kelas (with number id)
+                setSelected({
+                  id_Kelas: c.id ? parseInt(c.id, 10) : undefined,
+                  nama_kelas: c.name,
+                  deskripsi: c.description,
+                });
+              }}
             />
 
             {/* HEADER KELAS */}
@@ -180,8 +187,8 @@ export default function AdminMateri() {
               kelas={
                 selected
                   ? {
-                      id: selected.id_Kelas ?? selected.id,
-                      name: selected.nama_kelas ?? selected.name,
+                      id: (selected.id_Kelas ?? selected.id)?.toString() ?? "",
+                      name: selected.nama_kelas ?? selected.name ?? "",
                       description: selected.deskripsi,
                     }
                   : null
@@ -192,12 +199,12 @@ export default function AdminMateri() {
             {showModuleForm && (
               <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
                 <ModuleForm
-                  kelasId={selected?.id_Kelas ?? selected?.id}
+                  kelasId={(selected?.id_Kelas ?? selected?.id)?.toString() ?? ""}
                   onCancel={() => setShowModuleForm(false)}
                   onCreate={(m) => {
                     const row = m.data ?? m;
                     const newMod = {
-                      id: row.id_Materi,
+                      id: row.id_Materi?.toString() ?? "",
                       title: row.judul_materi,
                       description: row.deskripsi ?? "",
                     };
@@ -210,7 +217,10 @@ export default function AdminMateri() {
 
             {/* STRUCTURE */}
             <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
-              <ClassStructure modules={modules} />
+              <ClassStructure modules={modules.map((mod) => ({
+                ...mod,
+                id: mod.id?.toString?.() ?? "",
+              }))} />
             </div>
 
             {/* TASKS GRID */}
@@ -221,8 +231,11 @@ export default function AdminMateri() {
                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
                   <TaskForm
                     onAdd={handleAddTask}
-                    kelasId={selected?.id_Kelas ?? selected?.id}
-                    modules={modules}
+                    kelasId={(selected?.id_Kelas ?? selected?.id)?.toString() ?? ""}
+                    modules={modules.map((mod) => ({
+                      id: mod.id?.toString?.() ?? "",
+                      title: mod.title,
+                    }))}
                   />
                 </div>
               </div>

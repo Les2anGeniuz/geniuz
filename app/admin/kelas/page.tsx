@@ -9,13 +9,13 @@ import KelasTable from "../../components/kelas/kelasTable";
 import KelasModal from "../../components/kelas/kelasModal";
 
 interface Kelas {
-  id_Kelas: number;
+  id_Kelas: string | number;
   nama_kelas: string;
   deskripsi: string | null;
   nama_fakultas: string | null;
   nama_mentor: string | null;
-  id_Fakultas?: number;
-  id_Mentor?: number;
+  id_Fakultas: string | number;
+  id_Mentor?: string | number;
   Fakultas?: { nama_fakultas?: string | null };
   Mentor?: { nama_mentor?: string | null };
 }
@@ -84,8 +84,17 @@ export default function KelasPage() {
       }
 
       if (res.ok) {
-        const normalized = (json.data || []).map((row: Kelas) => ({
+        const normalized = (json.data || []).map((row: any) => ({
           ...row,
+          id_Kelas: typeof row.id_Kelas === "number" ? row.id_Kelas : String(row.id_Kelas),
+          id_Fakultas:
+            row.id_Fakultas !== undefined && row.id_Fakultas !== null
+              ? String(row.id_Fakultas)
+              : "",
+          id_Mentor:
+            row.id_Mentor !== undefined && row.id_Mentor !== null
+              ? String(row.id_Mentor)
+              : undefined,
           nama_fakultas: row.nama_fakultas ?? row.Fakultas?.nama_fakultas ?? null,
           nama_mentor: row.nama_mentor ?? row.Mentor?.nama_mentor ?? null,
         }));

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabaseServer";
 
@@ -13,6 +13,8 @@ const SELECT_RELS = `
   Pendaftaran(id_Pendaftaran)
 `;
 
+type RouteCtx = { params: Promise<{ id: string }> };
+
 function normalize(row: any) {
   return {
     id_Kelas: row.id_Kelas,
@@ -25,22 +27,14 @@ function normalize(row: any) {
     nama_kelas: row.nama_kelas ?? null,
     deskripsi: row.deskripsi ?? null,
 
-    jumlah_siswa: Array.isArray(row.Pendaftaran)
-      ? row.Pendaftaran.length
-      : 0,
+    jumlah_siswa: Array.isArray(row.Pendaftaran) ? row.Pendaftaran.length : 0,
   };
 }
 
-function getId(req: Request) {
-  const url = new URL(req.url);
-  return url.pathname.split("/").pop();
-}
-
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function GET(req: NextRequest, { params }: RouteCtx) {
+  const { id } = await params;
 
   const supabase = supabaseServer();
-
   const { data, error } = await supabase
     .from("Kelas")
     .select("*")
@@ -50,8 +44,6 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-
-  // jika data tidak ditemukan
   if (!data) {
     return NextResponse.json(
       { error: `Kelas dengan ID ${id} tidak ditemukan` },
@@ -62,13 +54,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json(data);
 }
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest, { params }: RouteCtx) {
   const adminId = (await cookies()).get("admin_id")?.value;
-  if (!adminId)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!adminId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const id = getId(req);
+    const { id } = await params;
     const body = await req.json();
 
     const updates: any = {};
@@ -78,7 +69,6 @@ export async function PUT(req: Request) {
     if ("deskripsi" in body) updates.deskripsi = body.deskripsi;
 
     const supabase = supabaseServer();
-
     const { data, error } = await supabase
       .from("Kelas")
       .update(updates)
@@ -86,8 +76,7 @@ export async function PUT(req: Request) {
       .select(SELECT_RELS)
       .single();
 
-    if (error)
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ data: normalize(data) });
   } catch (err: any) {
@@ -96,21 +85,17 @@ export async function PUT(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest, { params }: RouteCtx) {
   const adminId = (await cookies()).get("admin_id")?.value;
-  if (!adminId)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!adminId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const id = getId(req);
-    const supabase = supabaseServer();
-    const { error } = await supabase
-      .from("Kelas")
-      .delete()
-      .eq("id_Kelas", id);
+    const { id } = await params;
 
-    if (error)
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    const supabase = supabaseServer();
+    const { error } = await supabase.from("Kelas").delete().eq("id_Kelas", id);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

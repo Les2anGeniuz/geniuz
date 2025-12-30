@@ -9,7 +9,7 @@ import Footer from "./components/layouts/footer"
 
 export default function Page() {
   return (
-    <>
+    <div className="min-h-screen bg-[#F4F6F9]">
       <Navbar />
       <HeroSection />
       <FeatureSection />
@@ -17,7 +17,6 @@ export default function Page() {
       <Events />
       <CTA />
       <Footer />
-
-    </>
+    </div>
   );
 }
